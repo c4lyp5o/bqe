@@ -1,0 +1,51 @@
+# Node modules directory
+node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependency directories
+jspm_packages
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# dotenv environment variable files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output directories
+dist
+build
+
+# Docker files
+Dockerfile*
+.dockerignore
+
+# Miscellaneous
+*.swp
+*.swo
+*.bak
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
+*.gz
+*.zip
+*.tar
+*.tgz
+*.rar
+*.7z
+*.bak
+*.old
+*.orig
+*.rej

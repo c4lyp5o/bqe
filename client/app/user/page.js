@@ -75,10 +75,17 @@ export default function UserPage() {
   }, []);
 
   return (
-    <div>
-      <h1>User Page</h1>
-      <p>Scan the QR code to get started</p>
-      <img src={qrCode} alt='QR Code' />
+    <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
+      <h1 className='text-4xl font-bold mb-8'>User Page</h1>
+      <p className='mb-4 text-lg'>Scan the QR code to get started</p>
+      {qrCode && (
+        <img
+          src={qrCode}
+          alt='QR Code'
+          className='w-64 h-64 mb-4 border-4 border-white rounded-lg'
+        />
+      )}
+      {!qrCode && <p>Loading QR Code...</p>}
     </div>
   );
 }

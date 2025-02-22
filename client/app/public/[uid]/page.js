@@ -46,17 +46,24 @@ export default function FrontFacing() {
   }, []);
 
   return (
-    <div>
-      <h1>Front Facing</h1>
-      <p>Unique ID: {uid}</p>
-      <p>Current Number: {number[0]}</p>
-      <button
-        onClick={() => {
-          window.location.reload();
-        }}
-      >
-        Refresh Page
-      </button>
+    <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
+      <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
+      <div className='w-full max-w-md text-center'>
+        <p className='mb-2 text-lg'>
+          Unique ID: <span className='font-semibold'>{uid}</span>
+        </p>
+        <p className='mb-4 text-2xl'>
+          Current Number: <span className='font-bold'>{number[0]}</span>
+        </p>
+        <button
+          onClick={() => {
+            window.location.reload();
+          }}
+          className='w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold'
+        >
+          Refresh Page
+        </button>
+      </div>
     </div>
   );
 }

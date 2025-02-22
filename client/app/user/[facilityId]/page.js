@@ -103,27 +103,52 @@ export default function UserPage() {
   };
 
   return (
-    <div>
-      <h1>User Page</h1>
-      <p>Conection is alive: {aliveConn ? 'Yes' : 'No'}</p>
-      <p>Pongs received: {pongs}</p>
-      <p>Facility ID: {tempFacId}</p>
-      <p>Unique Public ID: {uid}</p>
-      <p>Current Number: {message[0]}</p>
-      <div>
-        Past Number:
-        {message.slice(1, 6).map((i, index) => {
-          return <p key={index}>{i}</p>;
-        })}
-      </div>
-      <div>
-        <button onClick={logOut} disabled={!aliveConn}>
+    <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
+      <h1 className='text-4xl font-bold mb-8'>User Page</h1>
+      <div className='w-full max-w-md text-center'>
+        <p className='mb-2 text-lg'>
+          Connection is alive:{' '}
+          <span className='font-semibold'>{aliveConn ? 'Yes' : 'No'}</span>
+        </p>
+        <p className='mb-2 text-lg'>
+          Pongs received: <span className='font-semibold'>{pongs}</span>
+        </p>
+        <p className='mb-2 text-lg'>
+          Facility ID: <span className='font-semibold'>{tempFacId}</span>
+        </p>
+        <p className='mb-2 text-lg'>
+          Unique Public ID: <span className='font-semibold'>{uid}</span>
+        </p>
+        <p className='mb-4 text-2xl'>
+          Current Number: <span className='font-bold'>{message[0]}</span>
+        </p>
+        <div className='mb-4'>
+          <h2 className='text-xl font-semibold mb-2'>Past Numbers:</h2>
+          {message.slice(1, 6).map((i, index) => (
+            <p key={index} className='text-lg'>
+              {i}
+            </p>
+          ))}
+        </div>
+        <button
+          onClick={logOut}
+          disabled={!aliveConn}
+          className='w-full p-3 mb-4 bg-red-600 hover:bg-red-700 rounded-lg font-semibold disabled:opacity-50'
+        >
           Log Out
         </button>
-      </div>
-      <div>
-        <h2>QR Code For Public</h2>
-        <img src={qrCode} alt='QR Code' />
+        <div className='mt-4'>
+          <h2 className='text-xl font-semibold mb-2'>QR Code For Public</h2>
+          {qrCode ? (
+            <img
+              src={qrCode}
+              alt='QR Code'
+              className='w-64 h-64 mb-4 border-4 border-white rounded-lg'
+            />
+          ) : (
+            <p>Loading QR Code...</p>
+          )}
+        </div>
       </div>
     </div>
   );

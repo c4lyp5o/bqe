@@ -77,6 +77,7 @@ export default function AdminPage() {
       }
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
+      localStorage.removeItem('uid');
     };
   }, [facilityId]);
 
@@ -144,9 +145,17 @@ export default function AdminPage() {
 
     return (
       <>
-        <button onClick={() => setPause((pause) => !pause)}>Pause</button>
-        <div>
-          <select onChange={(e) => setDeviceId(e.target.value)}>
+        <button
+          onClick={() => setPause((pause) => !pause)}
+          className='mt-2 p-2 bg-yellow-500 hover:bg-yellow-600 rounded-lg'
+        >
+          {pause ? 'Resume' : 'Pause'}
+        </button>
+        <div className='mt-2'>
+          <select
+            onChange={(e) => setDeviceId(e.target.value)}
+            className='p-2 bg-gray-800 text-white rounded-lg'
+          >
             <option value={undefined}>Select a device</option>
             {allDevices.map((device, index) => (
               <option key={index} value={device.deviceId}>
@@ -165,39 +174,49 @@ export default function AdminPage() {
           scanDelay={2000}
           paused={pause}
           onScan={handleScan}
+          className='mt-2'
         />
       </>
     );
   };
 
   return (
-    <div>
-      <h1>Admin Page</h1>
-      <p>Connection is alive: {aliveConn ? 'Yes' : 'No'}</p>
-      <p>Pongs received: {pongs}</p>
-      <p>Facility ID: {facilityId}</p>
-      <input
-        type='text'
-        value={number}
-        onChange={(e) => setNumber(e.target.value)}
-        placeholder='Enter number'
-      />
-      <div>
-        <button onClick={sendNumber} disabled={!aliveConn}>
+    <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
+      <h1 className='text-4xl font-bold mb-8'>Admin Page</h1>
+      <div className='w-full max-w-md'>
+        <p className='mb-2'>Connection is alive: {aliveConn ? 'Yes' : 'No'}</p>
+        <p className='mb-2'>Pongs received: {pongs}</p>
+        <p className='mb-4'>Facility ID: {facilityId}</p>
+        <input
+          type='text'
+          value={number}
+          onChange={(e) => setNumber(e.target.value)}
+          placeholder='Enter number'
+          className='w-full p-3 mb-4 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+        />
+        <button
+          onClick={sendNumber}
+          disabled={!aliveConn}
+          className='w-full p-3 mb-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold disabled:opacity-50'
+        >
           Send
         </button>
-      </div>
-      <div>
-        <button onClick={logOut} disabled={!aliveConn}>
+        <button
+          onClick={logOut}
+          disabled={!aliveConn}
+          className='w-full p-3 mb-4 bg-red-600 hover:bg-red-700 rounded-lg font-semibold disabled:opacity-50'
+        >
           Log Out
         </button>
-      </div>
-      <div>
-        <button onClick={triggerCamera} disabled={!aliveConn}>
-          Open Camera
+        <button
+          onClick={triggerCamera}
+          disabled={!aliveConn}
+          className='w-full p-3 mb-4 bg-green-600 hover:bg-green-700 rounded-lg font-semibold disabled:opacity-50'
+        >
+          {cameraOn ? 'Close Camera' : 'Open Camera'}
         </button>
+        <div className='mt-3'>{cameraOn && <ScannerComponent />}</div>
       </div>
-      <div className='mt-3'>{cameraOn && <ScannerComponent />}</div>
     </div>
   );
 }

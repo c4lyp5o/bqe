@@ -124,11 +124,11 @@ export default function AdminPage() {
     if (result) {
       try {
         console.log('result ', result);
-        const currTempId = result[0].rawValue.split('-')[1];
+        const currTempId = result[0].rawValue.split('temp-')[1];
         const currUid = localStorage.getItem('uid');
         console.log('currTempId ', currTempId);
         const currQrCode = `${process.env.NEXT_PUBLIC_BE_DOMAIN}/api/v1/trigger/${currTempId}-${currUid}`;
-        console.log('currQrQode ', currQrCode);
+        console.log('currQrCode ', currQrCode);
         const response = await fetch(currQrCode);
         if (!response.ok) {
           throw new Error('Network response was not ok');

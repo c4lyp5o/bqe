@@ -1,8 +1,11 @@
 import { LRUCache } from 'lru-cache';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const cache = new LRUCache({
-  max: 50000,
-  maxAge: 1000 * 60 * 60,
+  max: Number.parseInt(process.env.CACHE_MAX_STORAGE),
+  maxAge: Number.parseInt(process.env.CACHE_MAX_AGE),
 });
 
 export default cache;

@@ -83,10 +83,14 @@ export default function AdminPage() {
 
   const sendNumber = () => {
     if (!aliveConn) {
-      console.log('Not connected');
+      alert('Not connected');
       return;
     }
     if (ws.current && ws.current.readyState === 1) {
+      if (isNaN(parseInt(number))) {
+        alert('Invalid number');
+        return;
+      }
       const currAllNumber = [parseInt(number), ...allNumber];
       setAllNumber(currAllNumber);
       setNumber('');
@@ -127,7 +131,7 @@ export default function AdminPage() {
         const currTempId = result[0].rawValue.split('temp-')[1];
         const currUid = localStorage.getItem('uid');
         console.log('currTempId ', currTempId);
-        const currQrCode = `${process.env.NEXT_PUBLIC_BE_DOMAIN}/api/v1/trigger/${currTempId}-${currUid}`;
+        const currQrCode = `/api/v1/getTrigger/${currTempId}-${currUid}`;
         console.log('currQrCode ', currQrCode);
         const response = await fetch(currQrCode);
         if (!response.ok) {

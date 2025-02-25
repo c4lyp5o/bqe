@@ -10,6 +10,7 @@ import websocket from './controllers/websocket.js';
 
 // middleware
 import cache from './db/cache.js';
+import simpleAuth from './middleware/simpleAuth.js';
 import errorHandler from './middleware/errorHandler.js';
 import notFound from './middleware/notFound.js';
 
@@ -17,11 +18,13 @@ import notFound from './middleware/notFound.js';
 import httpRoutes from './routes/httpRoutes.js';
 
 const app = express();
+const server = http.createServer(app);
+const wss = websocket(server);
 
 app.use(json());
 app.use(cors());
 
-app.get('/api/v1/trigger/:multi', (req, res) => {
+app.get('/api/v1/trigger/:multi', simpleAuth, (req, res) => {
   const { multi } = req.params;
   const tempiIdAndUid = multi.split('-');
   if (tempiIdAndUid.length !== 2) {
@@ -60,9 +63,6 @@ app.use('/api/v1', httpRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
-
-const server = http.createServer(app);
-const wss = websocket(server);
 
 server.listen(process.env.PORT, () => {
   console.log(`Server is running on http://localhost:${process.env.PORT}`);

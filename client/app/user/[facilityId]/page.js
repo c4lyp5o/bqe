@@ -64,12 +64,10 @@ export default function UserPage() {
   useEffect(() => {
     console.log('CLIENT: user mode');
 
-    QRCode.toDataURL(`${process.env.NEXT_PUBLIC_FE_DOMAIN}/public/${uid}`).then(
-      (url) => {
-        console.log(url);
-        setQrCode(url);
-      }
-    );
+    QRCode.toDataURL(`${window.location.origin}/public/${uid}`).then((url) => {
+      console.log(url);
+      setQrCode(url);
+    });
 
     connectWebSocket();
 

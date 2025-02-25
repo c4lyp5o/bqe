@@ -8,6 +8,7 @@ export default function UserPage() {
   const router = useRouter();
 
   const [qrCode, setQrCode] = useState(null);
+  const [error, setError] = useState(false);
 
   const ws = useRef(null);
 
@@ -46,24 +47,25 @@ export default function UserPage() {
 
     const getNanoid = async () => {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BE_DOMAIN}/api/v1/getnanoid`
+        // `${process.env.NEXT_PUBLIC_BE_DOMAIN}/api/v1/getnanoid`
+        '/api/v1/getNumber'
       );
-      const data = await response.json();
-      console.log(data);
-      return data;
+      return response.json();
     };
 
     getNanoid().then((data) => {
       connectWebSocket(data);
       QRCode.toDataURL(
-        `${process.env.NEXT_PUBLIC_BE_DOMAIN}/api/v1/trigger/temp-${data.number}`
+        // `${process.env.NEXT_PUBLIC_BE_DOMAIN}/api/v1/trigger/temp-${data.number}`
+        `/api/v1/getTrigger/temp-${data.number}`
       )
         .then((url) => {
-          console.log(url);
+          // console.log(url);
           setQrCode(url);
         })
         .catch((err) => {
           console.error(err);
+          setError(true);
         });
     });
 
@@ -74,10 +76,21 @@ export default function UserPage() {
     };
   }, []);
 
+  if (error) {
+    return (
+      <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
+        <h1 className='text-4xl font-bold mb-8'>User Page</h1>
+        <p className='mb-4 text-lg'>
+          An error occurred. Please try again later.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
       <h1 className='text-4xl font-bold mb-8'>User Page</h1>
-      <p className='mb-4 text-lg'>Scan the QR code to get started</p>
+      <p className='mb-4 text-lg'>Scan the QR code using admin</p>
       {qrCode && (
         <img
           src={qrCode}

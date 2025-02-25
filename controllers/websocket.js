@@ -1,12 +1,11 @@
 import dotenv from 'dotenv';
 import { WebSocketServer } from 'ws';
-import { customAlphabet } from 'nanoid';
 
-import MESSAGE_TYPES from '../utils/messageTypes.js';
 import cache from '../db/cache.js';
+import nanoid from '../utils/nanoidGen.js';
+import MESSAGE_TYPES from '../utils/messageTypes.js';
 
 dotenv.config();
-const nanoid = customAlphabet('1234567890ABCDEF', 18);
 
 function onSocketError(err) {
   console.error(err);
@@ -139,6 +138,7 @@ export default (server) => {
           handlePingMessage(websocketServer, message);
           break;
         default:
+          ws.close();
           console.log(`Unknown message type: ${message.type}`);
       }
     });

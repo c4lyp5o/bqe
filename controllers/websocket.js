@@ -2,7 +2,8 @@ import dotenv from 'dotenv';
 import { WebSocketServer } from 'ws';
 
 import cache from '../db/cache.js';
-import nanoid from '../utils/nanoidGen.js';
+import logger from '../utils/logger.js';
+import { uuidGen } from '../utils/nanoidGen.js';
 import MESSAGE_TYPES from '../utils/messageTypes.js';
 
 dotenv.config();
@@ -12,97 +13,168 @@ function onSocketError(err) {
 }
 
 const handleIdentifyAdmin = (ws, message, ip) => {
-  console.log(`Admin ${ip} identified with facilityId: ${message.facilityId}`);
-  ws.facilityId = message.facilityId;
+  logger.info(
+    `[IDADMIN-INIT] Admin ${ip} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
+  );
+
+  ws.singleUseFacilityId = message.singleUseFacilityId;
   ws.type = MESSAGE_TYPES.IDENTIFY_ADMIN;
 
-  if (cache.get(message.facilityId)) {
-    console.log(`Admin for ${message.facilityId} already connected`);
-    ws.uniqueAdmin = false;
-    ws.send(JSON.stringify({ type: MESSAGE_TYPES.ALREADY_CONNECTED }));
-    ws.close();
+  const facilityId = cache.get(message.singleUseFacilityId);
+  // logger.info('WS facilityId: ', facilityId);
+
+  if (facilityId) {
+    ws.facilityId = facilityId;
+
+    const messageObject = {
+      type: MESSAGE_TYPES.SET_FACILITY_ID,
+      singleUseFacilityId: message.singleUseFacilityId,
+      facilityId,
+    };
+
+    ws.send(JSON.stringify(messageObject));
+    logger.info(
+      `[IDADMIN-ACCEPT] Accepted ${ws.uuid} for ${ws.singleUseFacilityId}`
+    );
   } else {
-    console.log('admin not connected');
-    const uid = nanoid();
-    ws.uniqueAdmin = true;
-    ws.uid = uid;
-    let currAdmin = {
-      type: MESSAGE_TYPES.ADMIN,
-      facilityId: message.facilityId,
-      uniqueAdmin: true,
-      uid,
+    const messageObject = {
+      type: MESSAGE_TYPES.NO_VALID_ID,
+      singleUseFacilityId: message.singleUseFacilityId,
     };
-    cache.set(message.facilityId, currAdmin);
-    cache.set(uid, message.facilityId);
-    currAdmin = {
-      ...currAdmin,
-      type: MESSAGE_TYPES.SET_UID,
-    };
-    ws.send(JSON.stringify(currAdmin));
-  }
-};
 
-const handleIdentifyClient = (ws, message, ip) => {
-  console.log(`Client ${ip} identified with facilityId: ${message.facilityId}`);
-  ws.facilityId = message.facilityId;
-  ws.type = MESSAGE_TYPES.IDENTIFY_CLIENT;
-};
-
-const handleIdentifyOpenPublic = (ws, message, ip) => {
-  console.log(`Open Public ${ip} identified with tempId: ${message.tempId}`);
-  ws.tempId = message.tempId;
-  ws.type = MESSAGE_TYPES.IDENTIFY_OPEN_PUBLIC;
-};
-
-const handleIdentifyPublic = (ws, message, ip) => {
-  console.log(`Public ${ip} identified with uid: ${message.uid}`);
-  ws.uid = message.uid;
-  ws.type = MESSAGE_TYPES.IDENTIFY_PUBLIC;
-  const facId = cache.get(message.uid);
-  if (facId) {
-    const currQ = cache.get(`${facId}-q`);
-    if (currQ) {
-      ws.send(
-        JSON.stringify({ type: MESSAGE_TYPES.CURRENT_Q, number: currQ.number })
-      );
-    }
+    ws.send(JSON.stringify(messageObject));
+    logger.warn(
+      `[IDADMIN-REJECT] Rejected ${ws.uuid} for ${ws.singleUseFacilityId}`
+    );
   }
 };
 
 const handleAdminMessage = (wss, message) => {
+  const currentNumbers = cache.get(`${message.facilityId}-q`) || [];
+  const updatedNumbers = [message.number].flat().concat(currentNumbers);
+
+  cache.set(`${message.facilityId}-q`, updatedNumbers);
+
+  const messageObject = {
+    type: MESSAGE_TYPES.ADMIN,
+    facilityId: message.facilityId,
+    number: updatedNumbers,
+  };
+
+  // logger.info('Sending admin message:', messageObject);
+
   wss.clients.forEach((client) => {
     if (
       client.readyState === WebSocket.OPEN &&
       client.facilityId === message.facilityId
     ) {
-      const messageObject = {
-        type: MESSAGE_TYPES.ADMIN,
-        facilityId: message.facilityId,
-        number: message.number,
-      };
-      cache.set(`${message.facilityId}-q`, messageObject);
       client.send(JSON.stringify(messageObject));
+      logger.info(
+        `[SENDADMIN] Found ${client.uuid} - ${client.singleUseFacilityId} - ${client.facilityId} to send message`
+      );
     }
   });
 };
 
+const handleIdentifyOpenPublic = (ws, message, ip) => {
+  logger.info(
+    `[IDOPENPUBLIC-INIT] Open Public ${ip}/${ws.uuid} identified with tempId: ${message.tempId}`
+  );
+
+  ws.type = MESSAGE_TYPES.IDENTIFY_OPEN_PUBLIC;
+  ws.tempId = message.tempId;
+};
+
+const handleIdentifyClient = (ws, message, ip) => {
+  logger.info(
+    `[IDCLIENT-INIT] Client ${ip}/${ws.uuid} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
+  );
+
+  ws.singleUseFacilityId = message.singleUseFacilityId;
+  ws.type = MESSAGE_TYPES.IDENTIFY_CLIENT;
+
+  const facilityId = cache.get(message.singleUseFacilityId);
+
+  if (facilityId) {
+    ws.facilityId = facilityId;
+
+    const messageObject = {
+      type: MESSAGE_TYPES.SET_FACILITY_ID,
+      singleUseFacilityId: message.singleUseFacilityId,
+      facilityId,
+    };
+
+    ws.send(JSON.stringify(messageObject));
+    logger.info(
+      `[IDCLIENT-ACCEPT] Accepted ${ws.uuid} for ${ws.singleUseFacilityId}`
+    );
+  } else {
+    const messageObject = {
+      type: MESSAGE_TYPES.NO_VALID_ID,
+      singleUseFacilityId: message.singleUseFacilityId,
+    };
+
+    ws.send(JSON.stringify(messageObject));
+    logger.warn(
+      `[IDCLIENT-REJECT] Rejected ${ws.uuid} for ${ws.singleUseFacilityId}`
+    );
+  }
+};
+
+const handleIdentifyPublic = (ws, message, ip) => {
+  logger.info(
+    `[IDPUBLIC-INIT] Public ${ip} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
+  );
+
+  ws.singleUseFacilityId = message.singleUseFacilityId;
+  ws.type = MESSAGE_TYPES.IDENTIFY_PUBLIC;
+
+  const facilityId = cache.get(message.singleUseFacilityId);
+
+  if (facilityId) {
+    const currentQueue = cache.get(`${facilityId}-q`);
+
+    if (currentQueue) {
+      const messageObject = {
+        type: MESSAGE_TYPES.CURRENT_Q,
+        singleUseFacilityId: message.singleUseFacilityId,
+        facilityId,
+        number: currentQueue.flat(),
+      };
+
+      ws.send(JSON.stringify(messageObject));
+      logger.info(
+        `[IDPUBLIC-ACCEPT] Accepted ${ws.uuid} for ${ws.singleUseFacilityId}`
+      );
+    }
+  } else {
+    const messageObject = {
+      type: MESSAGE_TYPES.NO_VALID_ID,
+      singleUseFacilityId: message.singleUseFacilityId,
+    };
+
+    ws.send(JSON.stringify(messageObject));
+    logger.warn(
+      `[IDPUBLIC-REJECT] Rejected ${ws.uuid} for ${ws.singleUseFacilityId}`
+    );
+  }
+};
+
 const handlePingMessage = (wss, message) => {
-  const responseType =
-    message.type === MESSAGE_TYPES.PING_ADMIN
-      ? MESSAGE_TYPES.PONG_ADMIN
-      : MESSAGE_TYPES.PONG_CLIENT;
+  const messageObject = {
+    type:
+      message.type === MESSAGE_TYPES.PING_ADMIN
+        ? MESSAGE_TYPES.PONG_ADMIN
+        : MESSAGE_TYPES.PONG_CLIENT,
+    singleUseFacilityId: message.singleUseFacilityId,
+  };
 
   wss.clients.forEach((client) => {
     if (
       client.readyState === WebSocket.OPEN &&
-      client.facilityId === message.facilityId
+      client.singleUseFacilityId === message.singleUseFacilityId
     ) {
-      client.send(
-        JSON.stringify({
-          type: responseType,
-          facilityId: message.facilityId,
-        })
-      );
+      client.send(JSON.stringify(messageObject));
     }
   });
 };
@@ -111,27 +183,32 @@ export default (server) => {
   const websocketServer = new WebSocketServer({ noServer: true });
 
   websocketServer.on('connection', function connection(ws, req) {
-    ws.on('message', async (data) => {
+    const uuid = uuidGen();
+    ws.uuid = uuid;
+    logger.info(`[CONNECTWS] New client connected ${uuid}`);
+    ws.send(JSON.stringify({ type: MESSAGE_TYPES.SET_UUID, uuid }));
+
+    ws.on('message', (data) => {
       const client = req.socket.remoteAddress;
       const ip = req.headers['x-forwarded-for'] || client;
       const message = JSON.parse(data);
-      // console.log(message);
+      // logger.info(message);
 
       switch (message.type) {
         case MESSAGE_TYPES.IDENTIFY_ADMIN:
           handleIdentifyAdmin(ws, message, ip);
           break;
-        case MESSAGE_TYPES.IDENTIFY_CLIENT:
-          handleIdentifyClient(ws, message, ip);
+        case MESSAGE_TYPES.ADMIN:
+          handleAdminMessage(websocketServer, message);
           break;
         case MESSAGE_TYPES.IDENTIFY_OPEN_PUBLIC:
           handleIdentifyOpenPublic(ws, message, ip);
           break;
+        case MESSAGE_TYPES.IDENTIFY_CLIENT:
+          handleIdentifyClient(ws, message, ip);
+          break;
         case MESSAGE_TYPES.IDENTIFY_PUBLIC:
           handleIdentifyPublic(ws, message, ip);
-          break;
-        case MESSAGE_TYPES.ADMIN:
-          handleAdminMessage(websocketServer, message);
           break;
         case MESSAGE_TYPES.PING_ADMIN:
         case MESSAGE_TYPES.PING_CLIENT:
@@ -139,18 +216,20 @@ export default (server) => {
           break;
         default:
           ws.close();
-          console.log(`Unknown message type: ${message.type}`);
+          logger.warn(`Unknown message type: ${message.type}`);
       }
     });
 
     ws.on('close', () => {
-      console.log(`facilityId: ${ws.facilityId}/${ws.type} disconnected`);
-      if (
-        ws.facilityId &&
-        ws.type === MESSAGE_TYPES.IDENTIFY_ADMIN &&
-        ws.uniqueAdmin
-      ) {
-        cache.delete(ws.facilityId);
+      logger.info(
+        `[WSCLOSE] ${ws.uuid}/${ws.singleUseFacilityId}/${ws.type} disconnected`
+      );
+
+      switch (ws.type) {
+        case MESSAGE_TYPES.IDENTIFY_ADMIN:
+          break;
+        default:
+          break;
       }
     });
 

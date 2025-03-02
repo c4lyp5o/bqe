@@ -26,16 +26,17 @@ app.use(cors());
 
 app.get('/api/v1/trigger/:multi', simpleAuth, (req, res) => {
   const { multi } = req.params;
-  const tempiIdAndUid = multi.split('-');
-  if (tempiIdAndUid.length !== 2) {
-    res.status(404).json({ message: 'Invalid UID' });
+  const singleUseFacilityIdAndTempId = multi.split('-');
+  if (singleUseFacilityIdAndTempId.length !== 2) {
+    res.status(404).json({ message: 'Invalid multiId' });
     return;
   }
-  const tempId = tempiIdAndUid[0];
-  const uid = tempiIdAndUid[1];
-  const facilityId = cache.get(uid);
+  const singleUseFacilityId = singleUseFacilityIdAndTempId[0];
+  const tempId = singleUseFacilityIdAndTempId[1];
+
+  const facilityId = cache.get(singleUseFacilityId);
   if (!facilityId) {
-    res.status(404).json({ message: 'Invalid UID' });
+    res.status(404).json({ message: 'Invalid facilityId' });
     return;
   }
 
@@ -48,15 +49,26 @@ app.get('/api/v1/trigger/:multi', simpleAuth, (req, res) => {
       client.send(
         JSON.stringify({
           type: 'open-queue-screen',
+          singleUseFacilityId,
           tempId,
-          facilityId,
-          uid,
         })
       );
     }
   });
 
   res.status(200).json({ message: 'Triggered open-queue-screen' });
+});
+
+app.get('/api/v1/killswitch', simpleAuth, (req, res) => {
+  const messageObject = {
+    type: 'killswitch',
+  };
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(messageObject));
+    }
+  });
 });
 
 app.use('/api/v1', httpRoutes);

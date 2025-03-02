@@ -4,14 +4,20 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Scanner, useDevices } from '@yudiel/react-qr-scanner';
 
-export default function AdminPage() {
+export default function NumberCallerPage() {
   const router = useRouter();
-  const { facilityId } = useParams();
+  const { singleUseFacilityId } = useParams();
 
   const [aliveConn, setAliveConn] = useState(false);
+  const [error, setError] = useState(false);
   const [number, setNumber] = useState('');
   const [allNumber, setAllNumber] = useState([]);
   const [pongs, setPongs] = useState(0);
+
+  const [facilityId, setFacilityId] = useState(null);
+
+  // client side id
+  const [uuid, setUuid] = useState(null);
 
   // camera
   const [cameraOn, setCameraOn] = useState(false);
@@ -27,10 +33,13 @@ export default function AdminPage() {
 
     ws.current.onopen = () => {
       console.log('Connected to WebSocket server as admin');
+
       setAliveConn(true);
       clearTimeout(reconnectTimeout.current);
       if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(JSON.stringify({ type: 'identifyadmin', facilityId }));
+        ws.current.send(
+          JSON.stringify({ type: 'identifyadmin', singleUseFacilityId })
+        );
         startPing();
       }
     };
@@ -39,17 +48,48 @@ export default function AdminPage() {
       const message = JSON.parse(event.data);
       // console.log(message);
 
-      if (message.type === 'pong-admin' && message.facilityId === facilityId) {
-        setPongs((pongs) => pongs + 1);
+      if (message.type === 'killswitch') {
+        console.log('Killswitch activated');
+        clearTimeout(reconnectTimeout.current);
+        clearInterval(pingInterval.current);
+        ws.current.close();
+        router.replace('/');
       }
 
-      if (message.type === 'set-uid' && message.facilityId === facilityId) {
-        console.log('Setting uid:', message.uid);
-        localStorage.setItem('uid', message.uid);
+      if (message.type === 'set-uuid') {
+        console.log('uuid:', message.uuid);
+        setUuid(message.uuid);
+      }
+
+      if (
+        message.type === 'no-valid-id' &&
+        message.singleUseFacilityId === singleUseFacilityId
+      ) {
+        clearTimeout(reconnectTimeout.current);
+        clearInterval(pingInterval.current);
+        ws.current.close();
+        setError(true);
+      }
+
+      if (
+        message.type === 'set-facility-id' &&
+        message.singleUseFacilityId === singleUseFacilityId
+      ) {
+        console.log('facilityId:', message.facilityId);
+        setFacilityId(message.facilityId);
+      }
+
+      if (
+        message.type === 'pong-admin' &&
+        message.singleUseFacilityId === singleUseFacilityId
+      ) {
+        setPongs((pongs) => pongs + 1);
       }
 
       if (message.type === 'already-connected') {
         console.log('Already connected');
+        clearTimeout(reconnectTimeout.current);
+        clearInterval(pingInterval.current);
         ws.current.close();
         router.replace('/');
       }
@@ -77,9 +117,8 @@ export default function AdminPage() {
       }
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
-      localStorage.removeItem('uid');
     };
-  }, [facilityId]);
+  }, [singleUseFacilityId, facilityId]);
 
   const sendNumber = () => {
     if (!aliveConn) {
@@ -91,12 +130,17 @@ export default function AdminPage() {
         alert('Invalid number');
         return;
       }
-      const currAllNumber = [parseInt(number), ...allNumber];
+      const currAllNumber = [parseInt(number)].concat(allNumber);
       setAllNumber(currAllNumber);
       setNumber('');
       console.log(currAllNumber);
       ws.current.send(
-        JSON.stringify({ type: 'admin', facilityId, number: currAllNumber })
+        JSON.stringify({
+          type: 'admin',
+          singleUseFacilityId,
+          facilityId,
+          number: [parseInt(number)],
+        })
       );
     }
   };
@@ -106,16 +150,18 @@ export default function AdminPage() {
     clearInterval(pingInterval.current);
     pingInterval.current = setInterval(() => {
       if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(JSON.stringify({ type: 'ping-admin', facilityId }));
+        ws.current.send(
+          JSON.stringify({ type: 'ping-admin', singleUseFacilityId })
+        );
       }
     }, 30000);
   };
 
   const logOut = () => {
     if (ws.current && ws.current.readyState === 1) {
-      ws.current.close();
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
+      ws.current.close();
       router.replace('/');
     }
   };
@@ -127,14 +173,14 @@ export default function AdminPage() {
   const handleScan = async (result) => {
     if (result) {
       try {
-        console.log('result ', result);
         const currTempId = result[0].rawValue.split('temp-')[1];
-        const currUid = localStorage.getItem('uid');
         console.log('currTempId ', currTempId);
-        const currQrCode = `/api/v1/getTrigger/${currTempId}-${currUid}`;
+        const currQrCode = `/api/v1/getTrigger/${singleUseFacilityId}-${currTempId}`;
         console.log('currQrCode ', currQrCode);
         const response = await fetch(currQrCode);
         if (!response.ok) {
+          setCameraOn(false);
+          alert('Invalid QR Code');
           throw new Error('Network response was not ok');
         }
         console.log('QR code processed successfully');
@@ -184,13 +230,25 @@ export default function AdminPage() {
     );
   };
 
+  if (error) {
+    return (
+      <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
+        <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
+        <p className='text-2xl'>Invalid ID</p>
+      </div>
+    );
+  }
+
   return (
     <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
-      <h1 className='text-4xl font-bold mb-8'>Admin Page</h1>
+      <h1 className='text-4xl font-bold mb-8'>Number Caller Page</h1>
       <div className='w-full max-w-md'>
         <p className='mb-2'>Connection is alive: {aliveConn ? 'Yes' : 'No'}</p>
         <p className='mb-2'>Pongs received: {pongs}</p>
-        <p className='mb-4'>Facility ID: {facilityId}</p>
+        <p className='mb-2'>SIngle Use Facility ID: {singleUseFacilityId}</p>
+        <p className='mb-2'>UUID: {uuid}</p>
+        <p className='mb-2'>Facility Name: {facilityId}</p>
+        <p className='mb-2'>All Numbers: {allNumber.join(', ')}</p>
         <input
           type='text'
           value={number}

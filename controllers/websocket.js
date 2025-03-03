@@ -20,16 +20,20 @@ const handleIdentifyAdmin = (ws, message, ip) => {
   ws.singleUseFacilityId = message.singleUseFacilityId;
   ws.type = MESSAGE_TYPES.IDENTIFY_ADMIN;
 
-  const facilityId = cache.get(message.singleUseFacilityId);
-  // logger.info('WS facilityId: ', facilityId);
+  const facilityData = cache.get(message.singleUseFacilityId);
+  // logger.info('WS facilityData: ', facilityData);
 
-  if (facilityId) {
-    ws.facilityId = facilityId;
+  if (facilityData) {
+    ws.facilityId = facilityData.facilityId;
+    ws.facilityName = facilityData.facilityName;
 
     const messageObject = {
       type: MESSAGE_TYPES.SET_FACILITY_ID,
       singleUseFacilityId: message.singleUseFacilityId,
-      facilityId,
+      facilityId: facilityData.facilityId,
+      facilityName: facilityData.facilityName,
+      facilityRoom: facilityData.facilityRoom,
+      uuid: ws.uuid,
     };
 
     ws.send(JSON.stringify(messageObject));
@@ -51,14 +55,16 @@ const handleIdentifyAdmin = (ws, message, ip) => {
 
 const handleAdminMessage = (wss, message) => {
   const currentNumbers = cache.get(`${message.facilityId}-q`) || [];
-  const updatedNumbers = [message.number].flat().concat(currentNumbers);
+  const updatedNumbers = [
+    { number: message.number, facilityRoom: message.facilityRoom },
+  ].concat(currentNumbers);
 
   cache.set(`${message.facilityId}-q`, updatedNumbers);
 
   const messageObject = {
     type: MESSAGE_TYPES.ADMIN,
     facilityId: message.facilityId,
-    number: updatedNumbers,
+    numbers: updatedNumbers,
   };
 
   // logger.info('Sending admin message:', messageObject);
@@ -93,15 +99,20 @@ const handleIdentifyClient = (ws, message, ip) => {
   ws.singleUseFacilityId = message.singleUseFacilityId;
   ws.type = MESSAGE_TYPES.IDENTIFY_CLIENT;
 
-  const facilityId = cache.get(message.singleUseFacilityId);
+  const facilityData = cache.get(message.singleUseFacilityId);
+  // logger.info('WS facilityData: ', facilityData);
 
-  if (facilityId) {
-    ws.facilityId = facilityId;
+  if (facilityData) {
+    ws.facilityId = facilityData.facilityId;
+    ws.facilityName = facilityData.facilityName;
 
     const messageObject = {
       type: MESSAGE_TYPES.SET_FACILITY_ID,
       singleUseFacilityId: message.singleUseFacilityId,
-      facilityId,
+      facilityId: facilityData.facilityId,
+      facilityName: facilityData.facilityName,
+      facilityRoom: facilityData.facilityRoom,
+      uuid: ws.uuid,
     };
 
     ws.send(JSON.stringify(messageObject));
@@ -129,24 +140,25 @@ const handleIdentifyPublic = (ws, message, ip) => {
   ws.singleUseFacilityId = message.singleUseFacilityId;
   ws.type = MESSAGE_TYPES.IDENTIFY_PUBLIC;
 
-  const facilityId = cache.get(message.singleUseFacilityId);
+  const facilityData = cache.get(message.singleUseFacilityId);
+  // logger.info('WS facilityData: ', facilityData);
 
-  if (facilityId) {
-    const currentQueue = cache.get(`${facilityId}-q`);
+  if (facilityData) {
+    ws.facilityId = facilityData.facilityId;
+    ws.facilityName = facilityData.facilityName;
 
-    if (currentQueue) {
-      const messageObject = {
-        type: MESSAGE_TYPES.CURRENT_Q,
-        singleUseFacilityId: message.singleUseFacilityId,
-        facilityId,
-        number: currentQueue.flat(),
-      };
+    const messageObject = {
+      type: MESSAGE_TYPES.SET_FACILITY_ID,
+      singleUseFacilityId: message.singleUseFacilityId,
+      facilityId: facilityData.facilityId,
+      facilityName: facilityData.facilityName,
+      uuid: ws.uuid,
+    };
 
-      ws.send(JSON.stringify(messageObject));
-      logger.info(
-        `[IDPUBLIC-ACCEPT] Accepted ${ws.uuid} for ${ws.singleUseFacilityId}`
-      );
-    }
+    ws.send(JSON.stringify(messageObject));
+    logger.info(
+      `[IDPUBLIC-ACCEPT] Accepted ${ws.uuid} for ${ws.singleUseFacilityId}`
+    );
   } else {
     const messageObject = {
       type: MESSAGE_TYPES.NO_VALID_ID,
@@ -186,7 +198,6 @@ export default (server) => {
     const uuid = uuidGen();
     ws.uuid = uuid;
     logger.info(`[CONNECTWS] New client connected ${uuid}`);
-    ws.send(JSON.stringify({ type: MESSAGE_TYPES.SET_UUID, uuid }));
 
     ws.on('message', (data) => {
       const client = req.socket.remoteAddress;
@@ -227,6 +238,8 @@ export default (server) => {
 
       switch (ws.type) {
         case MESSAGE_TYPES.IDENTIFY_ADMIN:
+          process.env.BUILD === 'production' &&
+            cache.del(ws.singleUseFacilityId);
           break;
         default:
           break;

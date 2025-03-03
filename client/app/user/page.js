@@ -13,6 +13,10 @@ export default function TvQRDisplayPage() {
   const ws = useRef(null);
 
   const connectWebSocket = (data) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      return;
+    }
+
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
     ws.current.onopen = () => {
@@ -72,12 +76,6 @@ export default function TvQRDisplayPage() {
           setError(true);
         });
     });
-
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-    };
   }, []);
 
   if (error) {

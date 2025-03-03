@@ -32,6 +32,10 @@ export default function NumberCallerPage() {
   const reconnectTimeout = useRef(null);
 
   const connectWebSocket = () => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      return;
+    }
+
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
     ws.current.onopen = () => {
@@ -118,9 +122,6 @@ export default function NumberCallerPage() {
     connectWebSocket();
 
     return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
     };

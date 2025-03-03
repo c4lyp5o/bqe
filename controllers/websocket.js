@@ -20,12 +20,28 @@ const handleIdentifyAdmin = (ws, message, ip) => {
   ws.singleUseFacilityId = message.singleUseFacilityId;
   ws.type = MESSAGE_TYPES.IDENTIFY_ADMIN;
 
+  const isConnected = cache.get(`${message.singleUseFacilityId}-connected`);
+  if (isConnected) {
+    const messageObject = {
+      type: MESSAGE_TYPES.ALREADY_CONNECTED,
+      singleUseFacilityId: message.singleUseFacilityId,
+    };
+
+    ws.send(JSON.stringify(messageObject));
+    logger.warn(
+      `[IDADMIN-REJECT] Rejected ${ws.uuid} for ${ws.singleUseFacilityId} since already connected`
+    );
+    return;
+  }
+
   const facilityData = cache.get(message.singleUseFacilityId);
   // logger.info('WS facilityData: ', facilityData);
 
   if (facilityData) {
     ws.facilityId = facilityData.facilityId;
     ws.facilityName = facilityData.facilityName;
+
+    cache.set(`${message.singleUseFacilityId}-connected`, true);
 
     const messageObject = {
       type: MESSAGE_TYPES.SET_FACILITY_ID,
@@ -238,8 +254,8 @@ export default (server) => {
 
       switch (ws.type) {
         case MESSAGE_TYPES.IDENTIFY_ADMIN:
-          process.env.BUILD === 'production' &&
-            cache.del(ws.singleUseFacilityId);
+          cache.delete(ws.singleUseFacilityId);
+          cache.delete(`${ws.singleUseFacilityId}-connected`);
           break;
         default:
           break;

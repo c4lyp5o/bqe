@@ -252,14 +252,14 @@ export default (server) => {
         `[WSCLOSE] ${ws.uuid}/${ws.singleUseFacilityId}/${ws.type} disconnected`
       );
 
-      switch (ws.type) {
-        case MESSAGE_TYPES.IDENTIFY_ADMIN:
-          cache.delete(ws.singleUseFacilityId);
-          cache.delete(`${ws.singleUseFacilityId}-connected`);
-          break;
-        default:
-          break;
-      }
+      // switch (ws.type) {
+      //   case MESSAGE_TYPES.IDENTIFY_ADMIN:
+      //     cache.delete(ws.singleUseFacilityId);
+      //     cache.delete(`${ws.singleUseFacilityId}-connected`);
+      //     break;
+      //   default:
+      //     break;
+      // }
     });
 
     ws.on('error', console.error);

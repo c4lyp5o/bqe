@@ -3,6 +3,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const customGen = customAlphabet('1234567890ABCDEF', process.env.NANOID_LENGTH);
+const customGen = customAlphabet(
+  '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  process.env.NANOID_LENGTH
+);
 
 export { uuidGen, customGen };

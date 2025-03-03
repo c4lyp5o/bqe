@@ -46,7 +46,9 @@ export default function TvQRDisplayPage() {
       ) {
         console.log('Received open-queue-screen message');
         ws.current.close();
-        router.push(`/user/${message.singleUseFacilityId}-${message.tempId}`);
+        router.push(
+          `/user/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
+        );
       }
     };
   };

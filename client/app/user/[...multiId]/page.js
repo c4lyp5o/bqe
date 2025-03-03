@@ -8,8 +8,8 @@ export default function TvNumberDisplayPage() {
   const router = useRouter();
   const { multiId } = useParams();
 
-  const singleUseFacilityId = multiId.split('-')[0]; // from number caller
-  const uid = multiId.split('-')[1]; // from open tv display
+  const tempId = multiId[0]; // from open tv display
+  const singleUseFacilityId = multiId[2]; // from number caller
 
   const [aliveConn, setAliveConn] = useState(false);
   const [message, setMessage] = useState([]);
@@ -17,7 +17,9 @@ export default function TvNumberDisplayPage() {
   const [error, setError] = useState(false);
   const [qrCode, setQrCode] = useState(null);
 
+  // facility data
   const [facilityId, setFacilityId] = useState(null);
+  const [facilityName, setFacilityName] = useState(null);
 
   // client side id
   const [uuid, setUuid] = useState(null);
@@ -57,31 +59,33 @@ export default function TvNumberDisplayPage() {
         router.replace('/');
       }
 
-      if (message.type === 'set-uuid') {
-        console.log('uuid:', message.uuid);
-        setUuid(message.uuid);
-      }
-
       if (
         message.type === 'no-valid-id' &&
         message.singleUseFacilityId === singleUseFacilityId
       ) {
         clearTimeout(reconnectTimeout.current);
         clearInterval(pingInterval.current);
-        ws.current.close();
         setError(true);
+        ws.current.close();
+        setTimeout(() => {
+          router.replace('/');
+        }, 5000);
       }
 
       if (
         message.type === 'set-facility-id' &&
         message.singleUseFacilityId === singleUseFacilityId
       ) {
-        console.log('facilityId:', message.facilityId);
+        console.log(
+          `facilityId, facilityName, facilityRoom, uuid: ${message.facilityId}, ${message.facilityName}, ${message.facilityRoom}, ${message.uuid}`
+        );
         setFacilityId(message.facilityId);
+        setFacilityName(message.facilityName);
+        setUuid(message.uuid);
       }
 
       if (message.type === 'admin' && message.facilityId === facilityId) {
-        setMessage(message.number);
+        setMessage(message.numbers);
       }
 
       if (
@@ -106,10 +110,12 @@ export default function TvNumberDisplayPage() {
   };
 
   useEffect(() => {
-    QRCode.toDataURL(`${window.location.origin}/public/${uid}`).then((url) => {
-      console.log(url);
-      setQrCode(url);
-    });
+    QRCode.toDataURL(`${window.location.origin}/public/${tempId}`).then(
+      (url) => {
+        console.log(url);
+        setQrCode(url);
+      }
+    );
 
     connectWebSocket();
 
@@ -145,62 +151,12 @@ export default function TvNumberDisplayPage() {
     }
   };
 
-  // return (
-  //   <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
-  //     <h1 className='text-4xl font-bold mb-8'>TV Display</h1>
-  //     <div className='w-full max-w-md text-center'>
-  //       <p className='mb-2 text-lg'>
-  //         Connection is alive:{' '}
-  //         <span className='font-semibold'>{aliveConn ? 'Yes' : 'No'}</span>
-  //       </p>
-  //       <p className='mb-2 text-lg'>
-  //         Pongs received: <span className='font-semibold'>{pongs}</span>
-  //       </p>
-  //       <p className='mb-2 text-lg'>
-  //         Facility ID: <span className='font-semibold'>{singleUseFacilityId}</span>
-  //       </p>
-  //       <p className='mb-2 text-lg'>
-  //         Unique Public ID: <span className='font-semibold'>{uid}</span>
-  //       </p>
-  //       <p className='mb-4 text-2xl'>
-  //         Current Number: <span className='font-bold'>{message[0]}</span>
-  //       </p>
-  //       <div className='mb-4'>
-  //         <h2 className='text-xl font-semibold mb-2'>Past Numbers:</h2>
-  //         {message.slice(1, 6).map((i, index) => (
-  //           <p key={index} className='text-lg'>
-  //             {i}
-  //           </p>
-  //         ))}
-  //       </div>
-  //       <button
-  //         onClick={logOut}
-  //         disabled={!aliveConn}
-  //         className='w-full p-3 mb-4 bg-red-600 hover:bg-red-700 rounded-lg font-semibold disabled:opacity-50'
-  //       >
-  //         Log Out
-  //       </button>
-  //       <div className='mt-4'>
-  //         <h2 className='text-xl font-semibold mb-2'>QR Code For Public</h2>
-  //         {qrCode ? (
-  //           <img
-  //             src={qrCode}
-  //             alt='QR Code'
-  //             className='w-64 h-64 mb-4 border-4 border-white rounded-lg'
-  //           />
-  //         ) : (
-  //           <p>Loading QR Code...</p>
-  //         )}
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
-
   if (error) {
     return (
       <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
         <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
         <p className='text-2xl'>Invalid ID</p>
+        <p className='text-2xl'>Redirecting after 5 seconds</p>
       </div>
     );
   }
@@ -210,20 +166,20 @@ export default function TvNumberDisplayPage() {
       <div className='w-full max-w-7xl aspect-w-16 aspect-h-9'>
         <div className='flex flex-col items-center justify-center h-full'>
           <h1 className='text-6xl font-bold mb-8 text-center'>
-            {facilityId} - UUID: {uuid}
+            {facilityName}
           </h1>
           <div className='flex w-full h-full'>
             <div className='flex-2 flex flex-col items-center justify-center border-r border-gray-700 pr-4'>
               <p className='text-9xl font-bold mb-4 border-4 border-white p-8 rounded-lg'>
-                {message[0]}
+                {message[0]?.number} - {message[0]?.facilityRoom}
               </p>
             </div>
             <div className='flex-1 flex flex-col items-center justify-center pl-4'>
               <div className='mb-4'>
                 <h2 className='text-4xl font-semibold mb-2'>Past Numbers:</h2>
-                {message.slice(1, 6).map((i, index) => (
+                {message.slice(1, 6).map((item, index) => (
                   <p key={index} className='text-3xl mb-2'>
-                    {i}
+                    {item.number} - {item.facilityRoom}
                   </p>
                 ))}
               </div>

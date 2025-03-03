@@ -9,6 +9,7 @@ export default function FrontFacing() {
   const [number, setNumber] = useState([]);
   const [error, setError] = useState(false);
 
+  // facility id
   const [facilityId, setFacilityId] = useState(null);
 
   // client side id
@@ -35,15 +36,9 @@ export default function FrontFacing() {
 
       if (message.type === 'killswitch') {
         console.log('Killswitch activated');
-        clearTimeout(reconnectTimeout.current);
-        clearInterval(pingInterval.current);
+        clearInterval(refreshInterval);
         ws.current.close();
         router.replace('/');
-      }
-
-      if (message.type === 'set-uuid') {
-        console.log('uuid:', message.uuid);
-        setUuid(message.uuid);
       }
 
       if (
@@ -52,14 +47,21 @@ export default function FrontFacing() {
       ) {
         clearInterval(refreshInterval);
         setError(true);
+        ws.current.close();
+        setTimeout(() => {
+          router.replace('/');
+        }, 5000);
       }
 
       if (
         message.type === 'currentq' &&
-        message.singleUseFacilityId === singleUseFacilityId &&
-        message.number
+        message.singleUseFacilityId === singleUseFacilityId
       ) {
+        console.log(
+          `facilityId && uuid: ${message.facilityId}, ${message.uuid}`
+        );
         setFacilityId(message.facilityId);
+        setUuid(message.uuid);
         setNumber(message.number);
       }
     };
@@ -89,6 +91,7 @@ export default function FrontFacing() {
       <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
         <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
         <p className='text-2xl'>Invalid ID</p>
+        <p className='text-2xl'>Redirecting after 5 seconds</p>
       </div>
     );
   }

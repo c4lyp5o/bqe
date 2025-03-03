@@ -14,7 +14,10 @@ export default function NumberCallerPage() {
   const [allNumber, setAllNumber] = useState([]);
   const [pongs, setPongs] = useState(0);
 
+  // facility data
   const [facilityId, setFacilityId] = useState(null);
+  const [facilityName, setFacilityName] = useState(null);
+  const [facilityRoom, setFacilityRoom] = useState(null);
 
   // client side id
   const [uuid, setUuid] = useState(null);
@@ -56,11 +59,6 @@ export default function NumberCallerPage() {
         router.replace('/');
       }
 
-      if (message.type === 'set-uuid') {
-        console.log('uuid:', message.uuid);
-        setUuid(message.uuid);
-      }
-
       if (
         message.type === 'no-valid-id' &&
         message.singleUseFacilityId === singleUseFacilityId
@@ -69,14 +67,22 @@ export default function NumberCallerPage() {
         clearInterval(pingInterval.current);
         ws.current.close();
         setError(true);
+        setTimeout(() => {
+          router.replace('/');
+        }, 5000);
       }
 
       if (
         message.type === 'set-facility-id' &&
         message.singleUseFacilityId === singleUseFacilityId
       ) {
-        console.log('facilityId:', message.facilityId);
+        console.log(
+          `facilityId, facilityName, facilityRoom, uuid: ${message.facilityId}, ${message.facilityName}, ${message.facilityRoom}, ${message.uuid}`
+        );
         setFacilityId(message.facilityId);
+        setFacilityName(message.facilityName);
+        setFacilityRoom(message.facilityRoom);
+        setUuid(message.uuid);
       }
 
       if (
@@ -130,7 +136,9 @@ export default function NumberCallerPage() {
         alert('Invalid number');
         return;
       }
-      const currAllNumber = [parseInt(number)].concat(allNumber);
+      const currAllNumber = [{ number: parseInt(number), facilityRoom }].concat(
+        allNumber
+      );
       setAllNumber(currAllNumber);
       setNumber('');
       console.log(currAllNumber);
@@ -139,7 +147,8 @@ export default function NumberCallerPage() {
           type: 'admin',
           singleUseFacilityId,
           facilityId,
-          number: [parseInt(number)],
+          number: parseInt(number),
+          facilityRoom,
         })
       );
     }
@@ -173,11 +182,11 @@ export default function NumberCallerPage() {
   const handleScan = async (result) => {
     if (result) {
       try {
-        const currTempId = result[0].rawValue.split('temp-')[1];
-        console.log('currTempId ', currTempId);
-        const currQrCode = `/api/v1/getTrigger/${singleUseFacilityId}-${currTempId}`;
-        console.log('currQrCode ', currQrCode);
-        const response = await fetch(currQrCode);
+        const tempId = result[0].rawValue.split('temp-')[1];
+        console.log('tempId ', tempId);
+        const qrCode = `/api/v1/getTrigger/${tempId}-${singleUseFacilityId}`;
+        console.log('qrCode ', qrCode);
+        const response = await fetch(qrCode);
         if (!response.ok) {
           setCameraOn(false);
           alert('Invalid QR Code');
@@ -235,6 +244,7 @@ export default function NumberCallerPage() {
       <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
         <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
         <p className='text-2xl'>Invalid ID</p>
+        <p className='text-2xl'>Redirecting after 5 seconds</p>
       </div>
     );
   }
@@ -245,10 +255,17 @@ export default function NumberCallerPage() {
       <div className='w-full max-w-md'>
         <p className='mb-2'>Connection is alive: {aliveConn ? 'Yes' : 'No'}</p>
         <p className='mb-2'>Pongs received: {pongs}</p>
-        <p className='mb-2'>SIngle Use Facility ID: {singleUseFacilityId}</p>
+        <p className='mb-2'>Facility ID: {facilityId}</p>
+        <p className='mb-2'>Facility Name: {facilityName}</p>
+        <p className='mb-2'>Facility Room: {facilityRoom}</p>
+        <p className='mb-2'>Single Use Facility ID: {singleUseFacilityId}</p>
         <p className='mb-2'>UUID: {uuid}</p>
-        <p className='mb-2'>Facility Name: {facilityId}</p>
-        <p className='mb-2'>All Numbers: {allNumber.join(', ')}</p>
+        <p className='mb-2'>
+          All Numbers:{' '}
+          {allNumber
+            .map((item) => `${item.number} (Room: ${item.facilityRoom})`)
+            .join(', ')}
+        </p>
         <input
           type='text'
           value={number}

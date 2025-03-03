@@ -19,16 +19,20 @@ const getNanoid = (req, res) => {
 };
 
 const getSingleUseFacilityId = (req, res) => {
-  const { facilityId } = req.body;
-  console.log('BE facilityID: ', facilityId);
+  // console.log('express body: ', req.body);
+
+  const { facilityId, facilityName, facilityRoom } = req.body;
 
   if (!facilityId) {
     return res.status(400).json({ message: 'Facility ID is required' });
   }
 
   const singleUseFacilityId = customGen();
-  console.log('BE singleUseFacilityId: ', singleUseFacilityId);
-  cache.set(singleUseFacilityId, facilityId);
+  cache.set(singleUseFacilityId, {
+    facilityId,
+    facilityName,
+    facilityRoom,
+  });
 
   res.status(200).json({ singleUseFacilityId });
 };

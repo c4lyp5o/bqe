@@ -17,6 +17,9 @@ import notFound from './middleware/notFound.js';
 // routes
 import httpRoutes from './routes/httpRoutes.js';
 
+// logger
+import logger from './utils/logger.js';
+
 const app = express();
 const server = http.createServer(app);
 const wss = websocket(server);
@@ -26,16 +29,18 @@ app.use(cors());
 
 app.get('/api/v1/trigger/:multi', simpleAuth, (req, res) => {
   const { multi } = req.params;
-  const tempiIdAndUid = multi.split('-');
-  if (tempiIdAndUid.length !== 2) {
-    res.status(404).json({ message: 'Invalid UID' });
+  const singleUseFacilityIdAndTempId = multi.split('-');
+  if (singleUseFacilityIdAndTempId.length !== 2) {
+    res.status(404).json({ message: 'Invalid multiId' });
     return;
   }
-  const tempId = tempiIdAndUid[0];
-  const uid = tempiIdAndUid[1];
-  const facilityId = cache.get(uid);
+
+  const tempId = singleUseFacilityIdAndTempId[0];
+  const singleUseFacilityId = singleUseFacilityIdAndTempId[1];
+
+  const facilityId = cache.get(singleUseFacilityId);
   if (!facilityId) {
-    res.status(404).json({ message: 'Invalid UID' });
+    res.status(404).json({ message: 'Invalid facilityId' });
     return;
   }
 
@@ -49,8 +54,8 @@ app.get('/api/v1/trigger/:multi', simpleAuth, (req, res) => {
         JSON.stringify({
           type: 'open-queue-screen',
           tempId,
-          facilityId,
-          uid,
+          uuid: client.uuid,
+          singleUseFacilityId,
         })
       );
     }
@@ -59,11 +64,57 @@ app.get('/api/v1/trigger/:multi', simpleAuth, (req, res) => {
   res.status(200).json({ message: 'Triggered open-queue-screen' });
 });
 
+app.get('/api/v1/killswitch', simpleAuth, (req, res) => {
+  let messageObject = {
+    type: 'killswitch',
+  };
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(messageObject));
+    }
+  });
+
+  // switch (true) {
+  //   case !req.query:
+  //     wss.clients.forEach((client) => {
+  //       if (client.readyState === WebSocket.OPEN) {
+  //         client.send(JSON.stringify(messageObject));
+  //       }
+  //     });
+  //     break;
+  //   case req.query.uuid:
+  //     const uuids = req.query.uuid.split(',');
+  //     wss.clients.forEach((client) => {
+  //       if (
+  //         client.readyState === WebSocket.OPEN &&
+  //         uuids.includes(client.uuid)
+  //       ) {
+  //         client.send(JSON.stringify(messageObject));
+  //       }
+  //     });
+  //     break;
+  //   case req.query.facilityId:
+  //     const facilityIds = req.query.facilityId.split(',');
+  //     wss.clients.forEach((client) => {
+  //       if (
+  //         client.readyState === WebSocket.OPEN &&
+  //         facilityIds.includes(client.facilityId)
+  //       ) {
+  //         client.send(JSON.stringify(messageObject));
+  //       }
+  //     });
+  //     break;
+  // }
+
+  res.status(200).json({ message: 'Killswitch activated' });
+});
+
 app.use('/api/v1', httpRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
 
 server.listen(process.env.PORT, () => {
-  console.log(`Server is running on http://localhost:${process.env.PORT}`);
+  logger.info(`Server is running on http://localhost:${process.env.PORT}`);
 });

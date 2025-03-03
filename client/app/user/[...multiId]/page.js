@@ -29,9 +29,9 @@ export default function TvNumberDisplayPage() {
   const reconnectTimeout = useRef(null);
 
   const connectWebSocket = () => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      return;
-    }
+    // if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+    //   return;
+    // }
 
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
@@ -89,6 +89,7 @@ export default function TvNumberDisplayPage() {
       }
 
       if (message.type === 'admin' && message.facilityId === facilityId) {
+        console.log(message);
         setMessage(message.numbers);
       }
 
@@ -124,6 +125,9 @@ export default function TvNumberDisplayPage() {
     connectWebSocket();
 
     return () => {
+      // if (ws.current) {
+      //   ws.current.close();
+      // }
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
     };

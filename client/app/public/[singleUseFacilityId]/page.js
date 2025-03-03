@@ -19,9 +19,9 @@ export default function FrontFacing() {
   const refreshInterval = useRef(null);
 
   const connectWebSocket = () => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      return;
-    }
+    // if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+    //   return;
+    // }
 
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
@@ -83,6 +83,9 @@ export default function FrontFacing() {
     }, 60000);
 
     return () => {
+      // if (ws.current) {
+      //   ws.current.close();
+      // }
       clearInterval(refreshInterval.current);
     };
   }, [number, facilityId]);

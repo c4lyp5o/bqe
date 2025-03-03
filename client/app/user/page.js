@@ -13,9 +13,9 @@ export default function TvQRDisplayPage() {
   const ws = useRef(null);
 
   const connectWebSocket = (data) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      return;
-    }
+    // if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+    //   return;
+    // }
 
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 

@@ -188,6 +188,7 @@ export default function NumberCallerPage() {
         }
         console.log('QR code processed successfully');
       } catch (error) {
+        setCameraOn(false);
         console.error('Error processing QR code:', error);
       }
     }
@@ -257,7 +258,7 @@ export default function NumberCallerPage() {
         <p className='mb-2'>
           All Numbers:{' '}
           {allNumber
-            .map((item) => `${item.number} (Room: ${item.facilityRoom})`)
+            .map((item) => `${item.number} - ${item.facilityRoom}`)
             .join(', ')}
         </p>
         <input

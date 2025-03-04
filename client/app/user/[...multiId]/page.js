@@ -85,7 +85,7 @@ export default function TvNumberDisplayPage() {
       }
 
       if (message.type === 'admin' && message.facilityId === facilityId) {
-        console.log(message);
+        // console.log('message: ', message);
         setMessage(message.numbers);
       }
 
@@ -121,7 +121,7 @@ export default function TvNumberDisplayPage() {
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
     };
-  }, []);
+  }, [facilityId]);
 
   const startPing = () => {
     console.log('CLIENT: send the pings');

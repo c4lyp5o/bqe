@@ -164,6 +164,9 @@ export default function NumberCallerPage() {
     if (ws.current && ws.current.readyState === 1) {
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
+      ws.current.send(
+        JSON.stringify({ type: 'logout-admin', singleUseFacilityId })
+      );
       ws.current.close();
       router.replace('/');
     }

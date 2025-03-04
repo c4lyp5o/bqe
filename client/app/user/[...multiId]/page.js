@@ -109,12 +109,12 @@ export default function TvNumberDisplayPage() {
   useEffect(() => {
     connectWebSocket();
 
-    QRCode.toDataURL(`${window.location.origin}/public/${tempId}`).then(
-      (url) => {
-        console.log(url);
-        setQrCode(url);
-      }
-    );
+    QRCode.toDataURL(
+      `${window.location.origin}/public/${singleUseFacilityId}`
+    ).then((url) => {
+      console.log(url);
+      setQrCode(url);
+    });
 
     return () => {
       ws.current.close();

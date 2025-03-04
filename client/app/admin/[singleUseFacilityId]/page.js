@@ -32,10 +32,6 @@ export default function NumberCallerPage() {
   const reconnectTimeout = useRef(null);
 
   const connectWebSocket = () => {
-    // if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-    //   return;
-    // }
-
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
     ws.current.onopen = () => {
@@ -105,10 +101,6 @@ export default function NumberCallerPage() {
       }
     };
 
-    ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
     ws.current.onclose = () => {
       console.log('WebSocket connection closed, attempting to reconnect...');
       setAliveConn(false);
@@ -122,13 +114,11 @@ export default function NumberCallerPage() {
     connectWebSocket();
 
     return () => {
-      // if (ws.current) {
-      //   ws.current.close();
-      // }
+      ws.current.close();
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
     };
-  }, [singleUseFacilityId, facilityId]);
+  }, []);
 
   const sendNumber = () => {
     if (!aliveConn) {

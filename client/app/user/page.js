@@ -13,10 +13,6 @@ export default function TvQRDisplayPage() {
   const ws = useRef(null);
 
   const connectWebSocket = (data) => {
-    // if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-    //   return;
-    // }
-
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
     ws.current.onopen = () => {
@@ -66,7 +62,7 @@ export default function TvQRDisplayPage() {
     getNanoid().then((data) => {
       console.log(data);
       connectWebSocket(data);
-      QRCode.toDataURL(`/api/v1/getTrigger/temp-${data.number}`)
+      QRCode.toDataURL(`temp-${data.number}`)
         .then((url) => {
           // console.log(url);
           setQrCode(url);

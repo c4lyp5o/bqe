@@ -29,10 +29,6 @@ export default function TvNumberDisplayPage() {
   const reconnectTimeout = useRef(null);
 
   const connectWebSocket = () => {
-    // if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-    //   return;
-    // }
-
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
     ws.current.onopen = () => {
@@ -101,10 +97,6 @@ export default function TvNumberDisplayPage() {
       }
     };
 
-    ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
     ws.current.onclose = () => {
       console.log('WebSocket connection closed, attempting to reconnect...');
       setAliveConn(false);
@@ -115,6 +107,8 @@ export default function TvNumberDisplayPage() {
   };
 
   useEffect(() => {
+    connectWebSocket();
+
     QRCode.toDataURL(`${window.location.origin}/public/${tempId}`).then(
       (url) => {
         console.log(url);
@@ -122,16 +116,12 @@ export default function TvNumberDisplayPage() {
       }
     );
 
-    connectWebSocket();
-
     return () => {
-      // if (ws.current) {
-      //   ws.current.close();
-      // }
+      ws.current.close();
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
     };
-  }, [singleUseFacilityId, facilityId]);
+  }, []);
 
   const startPing = () => {
     console.log('CLIENT: send the pings');

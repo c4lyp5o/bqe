@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 export default function FrontFacing() {
   const { singleUseFacilityId } = useParams();
+  const router = useRouter();
 
   const [number, setNumber] = useState([]);
   const [error, setError] = useState(false);
@@ -19,10 +20,6 @@ export default function FrontFacing() {
   const refreshInterval = useRef(null);
 
   const connectWebSocket = () => {
-    // if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-    //   return;
-    // }
-
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
     ws.current.onopen = () => {
@@ -69,10 +66,6 @@ export default function FrontFacing() {
         setNumber(message.number);
       }
     };
-
-    ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
   };
 
   useEffect(() => {
@@ -83,12 +76,10 @@ export default function FrontFacing() {
     }, 60000);
 
     return () => {
-      // if (ws.current) {
-      //   ws.current.close();
-      // }
+      ws.current.close();
       clearInterval(refreshInterval.current);
     };
-  }, [number, facilityId]);
+  }, []);
 
   if (error) {
     return (

@@ -5,6 +5,8 @@ const MESSAGE_TYPES = {
   IDENTIFY_PUBLIC: 'identifypublic',
   SET_FACILITY_ID: 'set-facility-id',
   ADMIN: 'admin',
+  LOGOUT_ADMIN: 'logout-admin',
+  LOGOUT_CLIENT: 'logout-client',
   PING_ADMIN: 'ping-admin',
   PING_CLIENT: 'ping-client',
   SET_UUID: 'set-uuid',

@@ -10,8 +10,9 @@ export default function FrontFacing() {
   const [number, setNumber] = useState([]);
   const [error, setError] = useState(false);
 
-  // facility id
+  // facility data
   const [facilityId, setFacilityId] = useState(null);
+  const [facilityName, setFacilityName] = useState(null);
 
   // client side id
   const [uuid, setUuid] = useState(null);
@@ -59,9 +60,10 @@ export default function FrontFacing() {
         message.singleUseFacilityId === singleUseFacilityId
       ) {
         console.log(
-          `facilityId && uuid: ${message.facilityId}, ${message.uuid}`
+          `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
         );
         setFacilityId(message.facilityId);
+        setFacilityName(message.facilityName);
         setUuid(message.uuid);
         setNumber(message.number);
       }
@@ -95,18 +97,21 @@ export default function FrontFacing() {
     <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
       <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
       <div className='w-full max-w-md text-center'>
-        <p className='mb-2 text-lg'>
+        {/* <p className='mb-2 text-lg'>
           Facility ID: <span className='font-semibold'>{facilityId}</span>
-        </p>
+        </p> */}
         <p className='mb-2 text-lg'>
-          UUID: <span className='font-semibold'>{uuid}</span>
+          Facility Name: <span className='font-semibold'>{facilityName}</span>
         </p>
+        {/* <p className='mb-2 text-lg'>
+          UUID: <span className='font-semibold'>{uuid}</span>
+        </p> */}
         <p className='mb-4 text-2xl'>
-          Current Number: <span className='font-bold'>{number[0]}</span>
+          Current Number: <span className='font-bold'>{number[0]?.number}</span>
         </p>
         <button
           onClick={() => {
-            window.location.reload();
+            router.refresh();
           }}
           className='w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold'
         >

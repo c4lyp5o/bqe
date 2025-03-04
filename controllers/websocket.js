@@ -163,12 +163,15 @@ const handleIdentifyPublic = (ws, message, ip) => {
     ws.facilityId = facilityData.facilityId;
     ws.facilityName = facilityData.facilityName;
 
+    const number = cache.get(`${facilityData.facilityId}-q`) || [];
+
     const messageObject = {
-      type: MESSAGE_TYPES.SET_FACILITY_ID,
+      type: MESSAGE_TYPES.CURRENT_Q,
       singleUseFacilityId: message.singleUseFacilityId,
       facilityId: facilityData.facilityId,
       facilityName: facilityData.facilityName,
       uuid: ws.uuid,
+      number,
     };
 
     ws.send(JSON.stringify(messageObject));
@@ -219,7 +222,6 @@ export default (server) => {
       const client = req.socket.remoteAddress;
       const ip = req.headers['x-forwarded-for'] || client;
       const message = JSON.parse(data);
-      // logger.info(message);
 
       switch (message.type) {
         case MESSAGE_TYPES.IDENTIFY_ADMIN:

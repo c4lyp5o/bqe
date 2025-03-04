@@ -32,10 +32,6 @@ export default function NumberCallerPage() {
   const reconnectTimeout = useRef(null);
 
   const connectWebSocket = () => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      return;
-    }
-
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
 
     ws.current.onopen = () => {
@@ -105,10 +101,6 @@ export default function NumberCallerPage() {
       }
     };
 
-    ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
     ws.current.onclose = () => {
       console.log('WebSocket connection closed, attempting to reconnect...');
       setAliveConn(false);
@@ -122,10 +114,11 @@ export default function NumberCallerPage() {
     connectWebSocket();
 
     return () => {
+      ws.current.close();
       clearTimeout(reconnectTimeout.current);
       clearInterval(pingInterval.current);
     };
-  }, [singleUseFacilityId, facilityId]);
+  }, []);
 
   const sendNumber = () => {
     if (!aliveConn) {
@@ -195,6 +188,7 @@ export default function NumberCallerPage() {
         }
         console.log('QR code processed successfully');
       } catch (error) {
+        setCameraOn(false);
         console.error('Error processing QR code:', error);
       }
     }
@@ -264,7 +258,7 @@ export default function NumberCallerPage() {
         <p className='mb-2'>
           All Numbers:{' '}
           {allNumber
-            .map((item) => `${item.number} (Room: ${item.facilityRoom})`)
+            .map((item) => `${item.number} - ${item.facilityRoom}`)
             .join(', ')}
         </p>
         <input

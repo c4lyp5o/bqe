@@ -98,6 +98,13 @@ const handleAdminMessage = (wss, message) => {
   });
 };
 
+const handleAdminLogout = (ws, message, ip) => {
+  logger.info(
+    `[LOGOUTADMIN] Admin ${ip}/${ws.uuid}/${ws.singleUseFacilityId} logged out`
+  );
+  cache.delete(message.singleUseFacilityId);
+};
+
 const handleIdentifyOpenPublic = (ws, message, ip) => {
   logger.info(
     `[IDOPENPUBLIC-INIT] Open Public ${ip}/${ws.uuid} identified with tempId: ${message.tempId}`
@@ -230,6 +237,9 @@ export default (server) => {
         case MESSAGE_TYPES.ADMIN:
           handleAdminMessage(websocketServer, message);
           break;
+        case MESSAGE_TYPES.LOGOUT_ADMIN:
+          handleAdminLogout(ws, message, ip);
+          break;
         case MESSAGE_TYPES.IDENTIFY_OPEN_PUBLIC:
           handleIdentifyOpenPublic(ws, message, ip);
           break;
@@ -256,7 +266,6 @@ export default (server) => {
 
       switch (ws.type) {
         case MESSAGE_TYPES.IDENTIFY_ADMIN:
-          cache.delete(ws.singleUseFacilityId);
           cache.delete(`${ws.singleUseFacilityId}-connected`);
           break;
         default:

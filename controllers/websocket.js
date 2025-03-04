@@ -20,19 +20,19 @@ const handleIdentifyAdmin = (ws, message, ip) => {
   ws.singleUseFacilityId = message.singleUseFacilityId;
   ws.type = MESSAGE_TYPES.IDENTIFY_ADMIN;
 
-  // const isConnected = cache.get(`${message.singleUseFacilityId}-connected`);
-  // if (isConnected) {
-  //   const messageObject = {
-  //     type: MESSAGE_TYPES.ALREADY_CONNECTED,
-  //     singleUseFacilityId: message.singleUseFacilityId,
-  //   };
+  const isConnected = cache.get(`${message.singleUseFacilityId}-connected`);
+  if (isConnected) {
+    const messageObject = {
+      type: MESSAGE_TYPES.ALREADY_CONNECTED,
+      singleUseFacilityId: message.singleUseFacilityId,
+    };
 
-  //   ws.send(JSON.stringify(messageObject));
-  //   logger.warn(
-  //     `[IDADMIN-REJECT] Rejected ${ws.uuid} for ${ws.singleUseFacilityId} since already connected`
-  //   );
-  //   return;
-  // }
+    ws.send(JSON.stringify(messageObject));
+    logger.warn(
+      `[IDADMIN-REJECT] Rejected ${ws.uuid} for ${ws.singleUseFacilityId} since already connected`
+    );
+    return;
+  }
 
   const facilityData = cache.get(message.singleUseFacilityId);
   // logger.info('WS facilityData: ', facilityData);
@@ -163,12 +163,15 @@ const handleIdentifyPublic = (ws, message, ip) => {
     ws.facilityId = facilityData.facilityId;
     ws.facilityName = facilityData.facilityName;
 
+    const number = cache.get(`${facilityData.facilityId}-q`) || [];
+
     const messageObject = {
-      type: MESSAGE_TYPES.SET_FACILITY_ID,
+      type: MESSAGE_TYPES.CURRENT_Q,
       singleUseFacilityId: message.singleUseFacilityId,
       facilityId: facilityData.facilityId,
       facilityName: facilityData.facilityName,
       uuid: ws.uuid,
+      number,
     };
 
     ws.send(JSON.stringify(messageObject));
@@ -219,7 +222,6 @@ export default (server) => {
       const client = req.socket.remoteAddress;
       const ip = req.headers['x-forwarded-for'] || client;
       const message = JSON.parse(data);
-      // logger.info(message);
 
       switch (message.type) {
         case MESSAGE_TYPES.IDENTIFY_ADMIN:
@@ -252,14 +254,14 @@ export default (server) => {
         `[WSCLOSE] ${ws.uuid}/${ws.singleUseFacilityId}/${ws.type} disconnected`
       );
 
-      // switch (ws.type) {
-      //   case MESSAGE_TYPES.IDENTIFY_ADMIN:
-      //     cache.delete(ws.singleUseFacilityId);
-      //     cache.delete(`${ws.singleUseFacilityId}-connected`);
-      //     break;
-      //   default:
-      //     break;
-      // }
+      switch (ws.type) {
+        case MESSAGE_TYPES.IDENTIFY_ADMIN:
+          cache.delete(ws.singleUseFacilityId);
+          cache.delete(`${ws.singleUseFacilityId}-connected`);
+          break;
+        default:
+          break;
+      }
     });
 
     ws.on('error', console.error);

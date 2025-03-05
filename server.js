@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import express, { json } from 'express';
 import cors from 'cors';
-import http from 'http';
 
 dotenv.config();
 
@@ -21,8 +20,7 @@ import httpRoutes from './routes/httpRoutes.js';
 import logger from './utils/logger.js';
 
 const app = express();
-const server = http.createServer(app);
-const wss = websocket(server);
+// const server = http.createServer(app);
 
 app.use(json());
 app.use(cors());
@@ -115,6 +113,10 @@ app.use('/api/v1', httpRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-server.listen(process.env.PORT, () => {
+const server = app.listen(process.env.PORT, () => {
   logger.info(`Server is running on http://localhost:${process.env.PORT}`);
 });
+
+const wss = websocket(server);
+
+app.set('wss', wss);

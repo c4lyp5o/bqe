@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { io } from 'socket.io-client';
 
 export default function FrontFacing() {
   const { singleUseFacilityId } = useParams();
@@ -17,29 +18,26 @@ export default function FrontFacing() {
   // client side id
   const [uuid, setUuid] = useState(null);
 
-  const ws = useRef(null);
+  const socket = useRef(null);
   const refreshInterval = useRef(null);
 
-  const connectWebSocket = () => {
-    ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
+  useEffect(() => {
+    socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+      autoConnect: true,
+    });
 
-    ws.current.onopen = () => {
+    socket.current.on('connect', () => {
       console.log('Connected to WebSocket server as public facing');
-      if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(
-          JSON.stringify({ type: 'identifypublic', singleUseFacilityId })
-        );
-      }
-    };
+      socket.current.send({ type: 'identifypublic', singleUseFacilityId });
+    });
 
-    ws.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+    socket.current.on('message', (message) => {
       // console.log(message);
 
       if (message.type === 'killswitch') {
         console.log('Killswitch activated');
         clearInterval(refreshInterval);
-        ws.current.close();
+        socket.current.disconnect();
         router.replace('/');
       }
 
@@ -49,7 +47,7 @@ export default function FrontFacing() {
       ) {
         clearInterval(refreshInterval);
         setError(true);
-        ws.current.close();
+        socket.current.disconnect();
         setTimeout(() => {
           router.replace('/');
         }, 5000);
@@ -67,18 +65,16 @@ export default function FrontFacing() {
         setUuid(message.uuid);
         setNumber(message.number);
       }
-    };
-  };
+    });
 
-  useEffect(() => {
-    connectWebSocket();
+    socket.current.connect();
 
     refreshInterval.current = setInterval(() => {
       window.location.reload();
     }, 60000);
 
     return () => {
-      ws.current.close();
+      socket.current.disconnect();
       clearInterval(refreshInterval.current);
     };
   }, []);
@@ -111,7 +107,7 @@ export default function FrontFacing() {
         </p>
         <button
           onClick={() => {
-            router.refresh();
+            window.location.reload();
           }}
           className='w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold'
         >

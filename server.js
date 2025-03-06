@@ -20,7 +20,6 @@ import httpRoutes from './routes/httpRoutes.js';
 import logger from './utils/logger.js';
 
 const app = express();
-// const server = http.createServer(app);
 
 app.use(json());
 app.use(cors());

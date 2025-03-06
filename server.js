@@ -1,11 +1,12 @@
 import dotenv from 'dotenv';
 import express, { json } from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
 
 dotenv.config();
 
-// websocket
-import websocket from './controllers/websocket.js';
+// socketio
+import setupSocketIo from './controllers/socketio.js';
 
 // middleware
 import cache from './db/cache.js';
@@ -20,11 +21,14 @@ import httpRoutes from './routes/httpRoutes.js';
 import logger from './utils/logger.js';
 
 const app = express();
+const server = createServer(app);
+
+const ioServer = setupSocketIo(server);
 
 app.use(json());
 app.use(cors());
 
-app.get('/api/v1/trigger/:multi', simpleAuth, (req, res) => {
+app.get('/api/v1/trigger/:multi', simpleAuth, async (req, res) => {
   const { multi } = req.params;
   const singleUseFacilityIdAndTempId = multi.split('-');
   if (singleUseFacilityIdAndTempId.length !== 2) {
@@ -41,36 +45,28 @@ app.get('/api/v1/trigger/:multi', simpleAuth, (req, res) => {
     return;
   }
 
-  wss.clients.forEach((client) => {
-    if (
-      client.readyState === WebSocket.OPEN &&
-      client.type === 'identifyopenpublic' &&
-      client.tempId === tempId
-    ) {
-      client.send(
-        JSON.stringify({
-          type: 'open-queue-screen',
-          tempId,
-          uuid: client.uuid,
-          singleUseFacilityId,
-        })
-      );
+  const sockets = await ioServer.fetchSockets();
+
+  for (const socket of sockets) {
+    if (socket.tempId === tempId) {
+      socket.emit('message', {
+        type: 'open-queue-screen',
+        tempId,
+        uuid: socket.uuid,
+        singleUseFacilityId,
+      });
     }
-  });
+  }
 
   res.status(200).json({ message: 'Triggered open-queue-screen' });
 });
 
 app.get('/api/v1/killswitch', simpleAuth, (req, res) => {
-  let messageObject = {
+  const messageObject = {
     type: 'killswitch',
   };
 
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(messageObject));
-    }
-  });
+  ioServer.emit('message', messageObject);
 
   // switch (true) {
   //   case !req.query:
@@ -112,10 +108,6 @@ app.use('/api/v1', httpRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-const server = app.listen(process.env.PORT, () => {
+server.listen(process.env.PORT, () => {
   logger.info(`Server is running on http://localhost:${process.env.PORT}`);
 });
-
-const wss = websocket(server);
-
-app.set('wss', wss);

@@ -68,13 +68,17 @@ const handleAdminMessage = async (io, message) => {
     numbers: updatedNumbers,
   };
 
-  //   logger.info('Sending admin message:', messageObject);
+  // logger.info('Sending admin message:', messageObject);
 
   const sockets = await io.fetchSockets();
 
   for (const socket of sockets) {
-    if (socket.facilityId === message.facilityId) {
+    if (
+      socket.type === MESSAGE_TYPES.IDENTIFY_CLIENT &&
+      socket.facilityId === message.facilityId
+    ) {
       socket.send(messageObject);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 };

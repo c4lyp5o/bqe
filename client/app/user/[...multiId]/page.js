@@ -79,6 +79,11 @@ export default function TvNumberDisplayPage() {
       if (message.type === 'admin' && message.facilityId === facilityId) {
         // console.log('message: ', message);
         setMessage(message.numbers);
+        // playSound();
+        announceNumber(
+          message.numbers[0].number,
+          message.numbers[0].facilityRoom
+        );
       }
 
       if (
@@ -118,9 +123,19 @@ export default function TvNumberDisplayPage() {
     }, 30000);
   };
 
-  const logOut = () => {
-    socket.disconnect();
-    router.replace('/');
+  const playSound = () => {
+    const audio = new Audio('/path/to/sound.mp3');
+    audio.play();
+  };
+
+  const announceNumber = (number, facilityRoom) => {
+    const digits = number.toString().split('');
+    const utterances = [`Number `, ...digits, `, ${facilityRoom}`];
+
+    utterances.forEach((utterance) => {
+      const speech = new SpeechSynthesisUtterance(utterance);
+      speechSynthesis.speak(speech);
+    });
   };
 
   if (error) {

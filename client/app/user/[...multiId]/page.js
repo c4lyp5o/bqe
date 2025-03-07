@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import QRCode from 'qrcode';
+import { io } from 'socket.io-client';
 
 export default function TvNumberDisplayPage() {
   const router = useRouter();
@@ -24,38 +25,31 @@ export default function TvNumberDisplayPage() {
   // client side id
   const [uuid, setUuid] = useState(null);
 
-  const ws = useRef(null);
+  const socket = useRef(null);
   const pingInterval = useRef(null);
-  const reconnectTimeout = useRef(null);
 
-  const connectWebSocket = () => {
-    ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
+  useEffect(() => {
+    socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+      autoConnect: true,
+    });
 
-    ws.current.onopen = () => {
+    socket.current.on('connect', () => {
       console.log('Connected to WebSocket server as tv display mode');
 
       setAliveConn(true);
-      clearTimeout(reconnectTimeout.current);
-      if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(
-          JSON.stringify({
-            type: 'identifyclient',
-            singleUseFacilityId,
-          })
-        );
-        startPing();
-      }
-    };
+      socket.current.send({
+        type: 'identifyclient',
+        singleUseFacilityId,
+      });
+      startPing();
+    });
 
-    ws.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+    socket.current.on('message', (message) => {
       // console.log(message);
 
       if (message.type === 'killswitch') {
         console.log('Killswitch activated');
-        clearTimeout(reconnectTimeout.current);
-        clearInterval(pingInterval.current);
-        ws.current.close();
+        socket.current.disconnect();
         router.replace('/');
       }
 
@@ -63,10 +57,8 @@ export default function TvNumberDisplayPage() {
         message.type === 'no-valid-id' &&
         message.singleUseFacilityId === singleUseFacilityId
       ) {
-        clearTimeout(reconnectTimeout.current);
-        clearInterval(pingInterval.current);
         setError(true);
-        ws.current.close();
+        socket.current.disconnect();
         setTimeout(() => {
           router.replace('/');
         }, 5000);
@@ -87,6 +79,11 @@ export default function TvNumberDisplayPage() {
       if (message.type === 'admin' && message.facilityId === facilityId) {
         // console.log('message: ', message);
         setMessage(message.numbers);
+        // playSound();
+        announceNumber(
+          message.numbers[0].number,
+          message.numbers[0].facilityRoom
+        );
       }
 
       if (
@@ -95,19 +92,14 @@ export default function TvNumberDisplayPage() {
       ) {
         setPongs((pongs) => pongs + 1);
       }
-    };
+    });
 
-    ws.current.onclose = () => {
+    socket.current.on('close', () => {
       console.log('WebSocket connection closed, attempting to reconnect...');
       setAliveConn(false);
-      clearTimeout(reconnectTimeout.current);
-      clearInterval(pingInterval.current);
-      reconnectTimeout.current = setTimeout(connectWebSocket, 5000);
-    };
-  };
+    });
 
-  useEffect(() => {
-    connectWebSocket();
+    socket.current.connect();
 
     QRCode.toDataURL(
       `${window.location.origin}/public/${singleUseFacilityId}`
@@ -117,33 +109,33 @@ export default function TvNumberDisplayPage() {
     });
 
     return () => {
-      ws.current.close();
-      clearTimeout(reconnectTimeout.current);
-      clearInterval(pingInterval.current);
+      socket.current.disconnect();
     };
   }, [facilityId]);
 
   const startPing = () => {
     console.log('CLIENT: send the pings');
     pingInterval.current = setInterval(() => {
-      if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(
-          JSON.stringify({
-            type: 'ping-client',
-            singleUseFacilityId,
-          })
-        );
-      }
+      socket.current.send({
+        type: 'ping-client',
+        singleUseFacilityId,
+      });
     }, 30000);
   };
 
-  const logOut = () => {
-    if (ws.current && ws.current.readyState === 1) {
-      ws.current.close();
-      clearTimeout(reconnectTimeout.current);
-      clearInterval(pingInterval.current);
-      router.replace('/');
-    }
+  const playSound = () => {
+    const audio = new Audio('/path/to/sound.mp3');
+    audio.play();
+  };
+
+  const announceNumber = (number, facilityRoom) => {
+    const digits = number.toString().split('');
+    const utterances = [`Number `, ...digits, `, ${facilityRoom}`];
+
+    utterances.forEach((utterance) => {
+      const speech = new SpeechSynthesisUtterance(utterance);
+      speechSynthesis.speak(speech);
+    });
   };
 
   if (error) {

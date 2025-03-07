@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Scanner, useDevices } from '@yudiel/react-qr-scanner';
+import { io } from 'socket.io-client';
 
 export default function NumberCallerPage() {
   const router = useRouter();
@@ -27,35 +28,28 @@ export default function NumberCallerPage() {
   const [deviceId, setDeviceId] = useState(undefined);
   const [pause, setPause] = useState(false);
 
-  const ws = useRef(null);
+  const socket = useRef(null);
   const pingInterval = useRef(null);
-  const reconnectTimeout = useRef(null);
 
-  const connectWebSocket = () => {
-    ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
+  useEffect(() => {
+    socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+      autoConnect: true,
+    });
 
-    ws.current.onopen = () => {
+    socket.current.on('connect', () => {
       console.log('Connected to WebSocket server as admin');
-
       setAliveConn(true);
-      clearTimeout(reconnectTimeout.current);
-      if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(
-          JSON.stringify({ type: 'identifyadmin', singleUseFacilityId })
-        );
-        startPing();
-      }
-    };
+      socket.current.send({ type: 'identifyadmin', singleUseFacilityId });
+      startPing();
+    });
 
-    ws.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+    socket.current.on('message', (message) => {
       // console.log(message);
 
       if (message.type === 'killswitch') {
         console.log('Killswitch activated');
-        clearTimeout(reconnectTimeout.current);
         clearInterval(pingInterval.current);
-        ws.current.close();
+        socket.current.disconnect();
         router.replace('/');
       }
 
@@ -63,9 +57,8 @@ export default function NumberCallerPage() {
         message.type === 'no-valid-id' &&
         message.singleUseFacilityId === singleUseFacilityId
       ) {
-        clearTimeout(reconnectTimeout.current);
         clearInterval(pingInterval.current);
-        ws.current.close();
+        socket.current.disconnect();
         setError(true);
         setTimeout(() => {
           router.replace('/');
@@ -94,29 +87,21 @@ export default function NumberCallerPage() {
 
       if (message.type === 'already-connected') {
         console.log('Already connected');
-        clearTimeout(reconnectTimeout.current);
         clearInterval(pingInterval.current);
-        ws.current.close();
+        socket.current.disconnect();
         router.replace('/');
       }
-    };
+    });
 
-    ws.current.onclose = () => {
+    socket.current.on('close', () => {
       console.log('WebSocket connection closed, attempting to reconnect...');
       setAliveConn(false);
-      clearTimeout(reconnectTimeout.current);
-      clearInterval(pingInterval.current);
-      reconnectTimeout.current = setTimeout(connectWebSocket, 5000);
-    };
-  };
+    });
 
-  useEffect(() => {
-    connectWebSocket();
+    socket.current.connect();
 
     return () => {
-      ws.current.close();
-      clearTimeout(reconnectTimeout.current);
-      clearInterval(pingInterval.current);
+      socket.current.disconnect();
     };
   }, []);
 
@@ -125,51 +110,38 @@ export default function NumberCallerPage() {
       alert('Not connected');
       return;
     }
-    if (ws.current && ws.current.readyState === 1) {
-      if (isNaN(parseInt(number))) {
-        alert('Invalid number');
-        return;
-      }
-      const currAllNumber = [{ number: parseInt(number), facilityRoom }].concat(
-        allNumber
-      );
-      setAllNumber(currAllNumber);
-      setNumber('');
-      console.log(currAllNumber);
-      ws.current.send(
-        JSON.stringify({
-          type: 'admin',
-          singleUseFacilityId,
-          facilityId,
-          number: parseInt(number),
-          facilityRoom,
-        })
-      );
+    if (isNaN(parseInt(number))) {
+      alert('Invalid number');
+      return;
     }
+    const currAllNumber = [{ number: parseInt(number), facilityRoom }].concat(
+      allNumber
+    );
+    setAllNumber(currAllNumber);
+    setNumber('');
+    console.log(currAllNumber);
+    socket.current.send({
+      type: 'admin',
+      singleUseFacilityId,
+      facilityId,
+      number: parseInt(number),
+      facilityRoom,
+    });
   };
 
   const startPing = () => {
     console.log('ADMIN: send the pings');
     clearInterval(pingInterval.current);
     pingInterval.current = setInterval(() => {
-      if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(
-          JSON.stringify({ type: 'ping-admin', singleUseFacilityId })
-        );
-      }
+      socket.current.send({ type: 'ping-admin', singleUseFacilityId });
     }, 30000);
   };
 
   const logOut = () => {
-    if (ws.current && ws.current.readyState === 1) {
-      clearTimeout(reconnectTimeout.current);
-      clearInterval(pingInterval.current);
-      ws.current.send(
-        JSON.stringify({ type: 'logout-admin', singleUseFacilityId })
-      );
-      ws.current.close();
-      router.replace('/');
-    }
+    clearInterval(pingInterval.current);
+    socket.current.send({ type: 'logout-admin', singleUseFacilityId });
+    socket.current.disconnect();
+    router.replace('/');
   };
 
   const triggerCamera = () => {

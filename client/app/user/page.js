@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import QRCode from 'qrcode';
+import { io } from 'socket.io-client';
 
 export default function TvQRDisplayPage() {
   const router = useRouter();
@@ -10,68 +11,69 @@ export default function TvQRDisplayPage() {
   const [qrCode, setQrCode] = useState(null);
   const [error, setError] = useState(false);
 
-  const ws = useRef(null);
-
-  const connectWebSocket = (data) => {
-    ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_DOMAIN}`);
-
-    ws.current.onopen = () => {
-      console.log('Connected to WebSocket server as open user');
-
-      if (ws.current && ws.current.readyState === 1) {
-        ws.current.send(
-          JSON.stringify({
-            type: 'identifyopenpublic',
-            tempId: data.number,
-          })
-        );
-      }
-    };
-
-    ws.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      // console.log(message);
-
-      if (message.type === 'killswitch') {
-        console.log('Killswitch activated');
-        clearTimeout(reconnectTimeout.current);
-        clearInterval(pingInterval.current);
-        ws.current.close();
-        router.replace('/');
-      }
-
-      if (
-        message.type === 'open-queue-screen' &&
-        message.tempId === data.number
-      ) {
-        console.log('Received open-queue-screen message');
-        ws.current.close();
-        router.push(
-          `/user/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
-        );
-      }
-    };
-  };
+  const socket = useRef(null);
 
   useEffect(() => {
-    const getNanoid = async () => {
+    const qrActivation = async () => {
       const response = await fetch('/api/v1/getNumber');
       return response.json();
     };
 
-    getNanoid().then((data) => {
-      console.log(data);
-      connectWebSocket(data);
-      QRCode.toDataURL(`temp-${data.number}`)
-        .then((url) => {
-          // console.log(url);
-          setQrCode(url);
-        })
-        .catch((err) => {
-          console.error(err);
-          setError(true);
+    const initializeSocket = async () => {
+      try {
+        const tempId = await qrActivation();
+        console.log('tempId: ', tempId);
+
+        socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+          autoConnect: true,
         });
-    });
+
+        socket.current.on('connect', () => {
+          console.log('Connected to WebSocket server as open user');
+          socket.current.send({
+            type: 'identifyopenpublic',
+            tempId: tempId.number,
+          });
+        });
+
+        socket.current.on('message', (message) => {
+          console.log(message);
+
+          if (message.type === 'killswitch') {
+            console.log('Killswitch activated');
+            socket.current.disconnect();
+            router.replace('/');
+          }
+
+          if (
+            message.type === 'open-queue-screen' &&
+            message.tempId === tempId.number
+          ) {
+            console.log('Received open-queue-screen message');
+            socket.current.disconnect();
+            router.push(
+              `/user/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
+            );
+          }
+        });
+
+        socket.current.connect();
+
+        const url = await QRCode.toDataURL(`temp-${tempId.number}`);
+        setQrCode(url);
+      } catch (err) {
+        console.error(err);
+        setError(true);
+      }
+    };
+
+    initializeSocket();
+
+    return () => {
+      if (socket.current) {
+        socket.current.disconnect();
+      }
+    };
   }, []);
 
   if (error) {

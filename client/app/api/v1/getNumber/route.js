@@ -12,6 +12,6 @@ export async function GET(request) {
 
     return Response.json(number);
   } catch (error) {
-    return Response.json({ message: error.message }, { status: 500 });
+    return Response.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

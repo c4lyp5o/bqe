@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 import { Scanner, useDevices } from '@yudiel/react-qr-scanner';
 
 export default function QrScanner({ singleUseFacilityId }) {
@@ -12,16 +13,16 @@ export default function QrScanner({ singleUseFacilityId }) {
       try {
         const tempId = result[0].rawValue.split('temp-')[1];
         const qrCode = `/api/v1/getTrigger/${tempId}-${singleUseFacilityId}`;
-        console.log(`tempId, qrCode: ${tempId} ${qrCode}`);
+        // console.log(`tempId, qrCode: ${tempId} ${qrCode}`);
         const response = await fetch(qrCode);
         if (!response.ok) {
           setCameraOn(false);
-          alert('Invalid QR Code');
+          toast.error('Invalid QR code');
           throw new Error('Network response was not ok');
         }
-        console.log('QR code processed successfully');
+        // console.log('QR code processed successfully');
       } catch (error) {
-        console.error('Error processing QR code:', error);
+        // console.error('Error processing QR code:', error);
       } finally {
         setCameraOn(false);
       }

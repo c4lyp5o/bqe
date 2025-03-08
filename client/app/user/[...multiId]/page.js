@@ -43,7 +43,7 @@ export default function TvNumberDisplayPage() {
     });
 
     socket.current.on('connect', () => {
-      console.log('Connected to WebSocket server as tv display mode');
+      // console.log('Connected to WebSocket server as tv display mode');
       setAliveConn(true);
       socket.current.send({
         type: 'identifyclient',
@@ -66,9 +66,9 @@ export default function TvNumberDisplayPage() {
           setError(true);
           break;
         case 'set-facility-id':
-          console.log(
-            `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
-          );
+          // console.log(
+          //   `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
+          // );
           setFacilityId(message.facilityId);
           setFacilityName(message.facilityName);
           setUuid(message.uuid);
@@ -93,7 +93,6 @@ export default function TvNumberDisplayPage() {
     });
 
     socket.current.on('close', () => {
-      console.log('WebSocket connection closed, attempting to reconnect...');
       setAliveConn(false);
     });
 
@@ -102,7 +101,7 @@ export default function TvNumberDisplayPage() {
     QRCode.toDataURL(
       `${window.location.origin}/public/${singleUseFacilityId}`
     ).then((url) => {
-      console.log(url);
+      // console.log(url);
       setQrCode(url);
     });
 
@@ -117,7 +116,7 @@ export default function TvNumberDisplayPage() {
   }, [facilityId]);
 
   const startPing = () => {
-    console.log('CLIENT: send the pings');
+    // console.log('CLIENT: send the pings');
     pingInterval.current = setInterval(() => {
       socket.current.send({
         type: 'ping-client',

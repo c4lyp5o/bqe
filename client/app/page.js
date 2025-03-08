@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 // should be from resource
 const mockArray = [
@@ -50,8 +51,7 @@ export default function HomePage() {
 
       router.push(`/admin/${singleUseFacilityId}`);
     } catch (error) {
-      // console.error('Error saving facility ID:', error);
-      alert('Failed to save facility ID. Please try again.');
+      toast.error('We have encountered an error. Please try again.');
     }
   };
 

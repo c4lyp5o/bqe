@@ -19,6 +19,6 @@ export async function POST(request) {
 
     return Response.json(singleUseFacilityId);
   } catch (error) {
-    return Response.json({ message: error.message }, { status: 500 });
+    return Response.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

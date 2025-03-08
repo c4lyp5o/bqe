@@ -34,7 +34,7 @@ export default function FrontFacing() {
     });
 
     socket.current.on('connect', () => {
-      console.log('Connected to WebSocket server as public facing');
+      // console.log('Connected to WebSocket server as public facing');
       socket.current.send({ type: 'identifypublic', singleUseFacilityId });
     });
 
@@ -51,9 +51,9 @@ export default function FrontFacing() {
           setError(true);
           break;
         case 'currentq':
-          console.log(
-            `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
-          );
+          // console.log(
+          //   `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
+          // );
           setFacilityId(message.setFacilityId);
           setFacilityName(message.facilityName);
           setUuid(message.uuid);

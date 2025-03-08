@@ -16,7 +16,6 @@ jspm_packages
 .eslintcache
 
 # dotenv environment variable files
-.env
 .env.local
 .env.development.local
 .env.test.local
@@ -29,23 +28,3 @@ build
 # Docker files
 Dockerfile*
 .dockerignore
-
-# Miscellaneous
-*.swp
-*.swo
-*.bak
-*.tmp
-*.temp
-*.pid
-*.seed
-*.pid.lock
-*.gz
-*.zip
-*.tar
-*.tgz
-*.rar
-*.7z
-*.bak
-*.old
-*.orig
-*.rej

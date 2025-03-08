@@ -30,6 +30,7 @@ app.use(cors());
 
 app.get('/api/v1/trigger/:multi', simpleAuth, async (req, res) => {
   const { multi } = req.params;
+
   const singleUseFacilityIdAndTempId = multi.split('-');
   if (singleUseFacilityIdAndTempId.length !== 2) {
     res.status(404).json({ message: 'Invalid multiId' });
@@ -49,10 +50,10 @@ app.get('/api/v1/trigger/:multi', simpleAuth, async (req, res) => {
 
   for (const socket of sockets) {
     if (socket.tempId === tempId) {
-      socket.emit('message', {
+      socket.send({
         type: 'open-queue-screen',
         tempId,
-        uuid: socket.uuid,
+        uuid: socket.id,
         singleUseFacilityId,
       });
     }

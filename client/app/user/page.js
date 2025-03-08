@@ -5,11 +5,19 @@ import { useRouter } from 'next/navigation';
 import QRCode from 'qrcode';
 import { io } from 'socket.io-client';
 
+import Loading from '../../components/loading';
+import Invalid from '../../components/invalid';
+
 export default function TvQRDisplayPage() {
   const router = useRouter();
 
-  const [qrCode, setQrCode] = useState(null);
+  // page status
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorType, setErrorType] = useState(null);
+
+  // qr code
+  const [qrCode, setQrCode] = useState(null);
 
   const socket = useRef(null);
 
@@ -34,15 +42,16 @@ export default function TvQRDisplayPage() {
             type: 'identifyopenpublic',
             tempId: tempId.number,
           });
+          setLoading(false);
         });
 
         socket.current.on('message', (message) => {
-          console.log(message);
+          console.log('message: ', message);
 
           if (message.type === 'killswitch') {
-            console.log('Killswitch activated');
-            socket.current.disconnect();
-            router.replace('/');
+            setLoading(false);
+            setErrorType('killswitch');
+            setError(true);
           }
 
           if (
@@ -50,7 +59,7 @@ export default function TvQRDisplayPage() {
             message.tempId === tempId.number
           ) {
             console.log('Received open-queue-screen message');
-            socket.current.disconnect();
+            setLoading(true);
             router.push(
               `/user/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
             );
@@ -70,22 +79,13 @@ export default function TvQRDisplayPage() {
     initializeSocket();
 
     return () => {
-      if (socket.current) {
-        socket.current.disconnect();
-      }
+      if (socket.current) socket.current.disconnect();
     };
   }, []);
 
-  if (error) {
-    return (
-      <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
-        <h1 className='text-4xl font-bold mb-8'>TV Display</h1>
-        <p className='mb-4 text-lg'>
-          An error occurred. Please try again later.
-        </p>
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
+
+  if (error) return <Invalid errorType={errorType} />;
 
   return (
     <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>

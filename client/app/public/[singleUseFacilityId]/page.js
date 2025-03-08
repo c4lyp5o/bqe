@@ -1,15 +1,22 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { io } from 'socket.io-client';
+
+import Loading from '../../../components/loading';
+import Invalid from '../../../components/invalid';
 
 export default function FrontFacing() {
   const { singleUseFacilityId } = useParams();
-  const router = useRouter();
 
-  const [number, setNumber] = useState([]);
+  // page status
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorType, setErrorType] = useState(null);
+
+  // queue number
+  const [number, setNumber] = useState([]);
 
   // facility data
   const [facilityId, setFacilityId] = useState(null);
@@ -34,36 +41,25 @@ export default function FrontFacing() {
     socket.current.on('message', (message) => {
       // console.log(message);
 
-      if (message.type === 'killswitch') {
-        console.log('Killswitch activated');
-        clearInterval(refreshInterval);
-        socket.current.disconnect();
-        router.replace('/');
-      }
-
-      if (
-        message.type === 'no-valid-id' &&
-        message.singleUseFacilityId === singleUseFacilityId
-      ) {
-        clearInterval(refreshInterval);
-        setError(true);
-        socket.current.disconnect();
-        setTimeout(() => {
-          router.replace('/');
-        }, 5000);
-      }
-
-      if (
-        message.type === 'currentq' &&
-        message.singleUseFacilityId === singleUseFacilityId
-      ) {
-        console.log(
-          `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
-        );
-        setFacilityId(message.facilityId);
-        setFacilityName(message.facilityName);
-        setUuid(message.uuid);
-        setNumber(message.number);
+      switch (message.type) {
+        case 'killswitch':
+        case 'no-valid-id':
+          clearInterval(refreshInterval.current);
+          socket.current.disconnect();
+          setLoading(false);
+          setErrorType(message.type);
+          setError(true);
+          break;
+        case 'currentq':
+          console.log(
+            `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
+          );
+          setFacilityId(message.setFacilityId);
+          setFacilityName(message.facilityName);
+          setUuid(message.uuid);
+          setNumber(message.number);
+          setLoading(false);
+          break;
       }
     });
 
@@ -74,20 +70,16 @@ export default function FrontFacing() {
     }, 60000);
 
     return () => {
-      socket.current.disconnect();
+      if (socket.current) {
+        socket.current.disconnect();
+      }
       clearInterval(refreshInterval.current);
     };
   }, []);
 
-  if (error) {
-    return (
-      <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
-        <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
-        <p className='text-2xl'>Invalid ID</p>
-        <p className='text-2xl'>Redirecting after 5 seconds</p>
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
+
+  if (error) return <Invalid errorType={errorType} />;
 
   return (
     <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
@@ -97,7 +89,7 @@ export default function FrontFacing() {
           Facility ID: <span className='font-semibold'>{facilityId}</span>
         </p> */}
         <p className='mb-2 text-lg'>
-          Facility Name: <span className='font-semibold'>{facilityName}</span>
+          <span className='font-semibold'>{facilityName}</span>
         </p>
         {/* <p className='mb-2 text-lg'>
           UUID: <span className='font-semibold'>{uuid}</span>

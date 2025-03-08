@@ -51,6 +51,16 @@ const handleIdentifyAdmin = (socket, message) => {
     logger.info(
       `[IDADMIN-ACCEPT] Accepted ${socket.id} for ${socket.singleUseFacilityId}`
     );
+  } else {
+    const messageObject = {
+      type: MESSAGE_TYPES.NO_VALID_ID,
+      singleUseFacilityId: message.singleUseFacilityId,
+    };
+
+    socket.send(messageObject);
+    logger.warn(
+      `[IDADMIN-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId}`
+    );
   }
 };
 

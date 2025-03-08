@@ -1,21 +1,30 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import QRCode from 'qrcode';
 import { io } from 'socket.io-client';
 
+import Loading from '../../../components/loading';
+import Invalid from '../../../components/invalid';
+
 export default function TvNumberDisplayPage() {
-  const router = useRouter();
   const { multiId } = useParams();
 
   const tempId = multiId[0]; // from open tv display
   const singleUseFacilityId = multiId[2]; // from number caller
 
+  // page status
   const [aliveConn, setAliveConn] = useState(false);
-  const [message, setMessage] = useState([]);
-  const [pongs, setPongs] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorType, setErrorType] = useState(null);
+  const [pongs, setPongs] = useState(0);
+
+  // queue number
+  const [message, setMessage] = useState([]);
+
+  // qr code
   const [qrCode, setQrCode] = useState(null);
 
   // facility data
@@ -35,7 +44,6 @@ export default function TvNumberDisplayPage() {
 
     socket.current.on('connect', () => {
       console.log('Connected to WebSocket server as tv display mode');
-
       setAliveConn(true);
       socket.current.send({
         type: 'identifyclient',
@@ -47,50 +55,40 @@ export default function TvNumberDisplayPage() {
     socket.current.on('message', (message) => {
       // console.log(message);
 
-      if (message.type === 'killswitch') {
-        console.log('Killswitch activated');
-        socket.current.disconnect();
-        router.replace('/');
-      }
-
-      if (
-        message.type === 'no-valid-id' &&
-        message.singleUseFacilityId === singleUseFacilityId
-      ) {
-        setError(true);
-        socket.current.disconnect();
-        setTimeout(() => {
-          router.replace('/');
-        }, 5000);
-      }
-
-      if (
-        message.type === 'set-facility-id' &&
-        message.singleUseFacilityId === singleUseFacilityId
-      ) {
-        console.log(
-          `facilityId, facilityName, facilityRoom, uuid: ${message.facilityId}, ${message.facilityName}, ${message.facilityRoom}, ${message.uuid}`
-        );
-        setFacilityId(message.facilityId);
-        setFacilityName(message.facilityName);
-        setUuid(message.uuid);
-      }
-
-      if (message.type === 'admin' && message.facilityId === facilityId) {
-        // console.log('message: ', message);
-        setMessage(message.numbers);
-        // playSound();
-        announceNumber(
-          message.numbers[0].number,
-          message.numbers[0].facilityRoom
-        );
-      }
-
-      if (
-        message.type === 'pong-client' &&
-        message.singleUseFacilityId === singleUseFacilityId
-      ) {
-        setPongs((pongs) => pongs + 1);
+      switch (message.type) {
+        case 'killswitch':
+        case 'no-valid-id':
+        case 'already-connected':
+          clearInterval(pingInterval.current);
+          socket.current.disconnect();
+          setLoading(false);
+          setErrorType(message.type);
+          setError(true);
+          break;
+        case 'set-facility-id':
+          console.log(
+            `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
+          );
+          setFacilityId(message.facilityId);
+          setFacilityName(message.facilityName);
+          setUuid(message.uuid);
+          setLoading(false);
+          break;
+        case 'admin':
+          // console.log('message: ', message);
+          setMessage(message.numbers);
+          playSound(() => {
+            announceNumber(
+              message.numbers[0].number,
+              message.numbers[0].facilityRoom
+            );
+          });
+          break;
+        case 'pong-client':
+          setPongs((pongs) => pongs + 1);
+          break;
+        default:
+          break;
       }
     });
 
@@ -108,8 +106,13 @@ export default function TvNumberDisplayPage() {
       setQrCode(url);
     });
 
+    const voices = speechSynthesis.getVoices();
+    voices.forEach((voice) => {
+      console.log(`Voice: ${voice.name}, Language: ${voice.lang}`);
+    });
+
     return () => {
-      socket.current.disconnect();
+      if (socket.current) socket.current.disconnect();
     };
   }, [facilityId]);
 
@@ -123,9 +126,10 @@ export default function TvNumberDisplayPage() {
     }, 30000);
   };
 
-  const playSound = () => {
-    const audio = new Audio('/path/to/sound.mp3');
+  const playSound = (callback) => {
+    const audio = new Audio('/assets/notification.mp3');
     audio.play();
+    audio.onended = callback;
   };
 
   const announceNumber = (number, facilityRoom) => {
@@ -138,15 +142,9 @@ export default function TvNumberDisplayPage() {
     });
   };
 
-  if (error) {
-    return (
-      <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
-        <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
-        <p className='text-2xl'>Invalid ID</p>
-        <p className='text-2xl'>Redirecting after 5 seconds</p>
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
+
+  if (error) return <Invalid errorType={errorType} />;
 
   return (
     <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>

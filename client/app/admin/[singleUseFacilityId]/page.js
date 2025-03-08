@@ -2,18 +2,26 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Scanner, useDevices } from '@yudiel/react-qr-scanner';
 import { io } from 'socket.io-client';
+
+import QrScanner from '../../../components/qrScanner';
+import Loading from '../../../components/loading';
+import Invalid from '../../../components/invalid';
 
 export default function NumberCallerPage() {
   const router = useRouter();
   const { singleUseFacilityId } = useParams();
 
+  // page status
   const [aliveConn, setAliveConn] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorType, setErrorType] = useState(null);
+  const [pongs, setPongs] = useState(0);
+
+  // queue number
   const [number, setNumber] = useState('');
   const [allNumber, setAllNumber] = useState([]);
-  const [pongs, setPongs] = useState(0);
 
   // facility data
   const [facilityId, setFacilityId] = useState(null);
@@ -25,8 +33,6 @@ export default function NumberCallerPage() {
 
   // camera
   const [cameraOn, setCameraOn] = useState(false);
-  const [deviceId, setDeviceId] = useState(undefined);
-  const [pause, setPause] = useState(false);
 
   const socket = useRef(null);
   const pingInterval = useRef(null);
@@ -46,50 +52,31 @@ export default function NumberCallerPage() {
     socket.current.on('message', (message) => {
       // console.log(message);
 
-      if (message.type === 'killswitch') {
-        console.log('Killswitch activated');
-        clearInterval(pingInterval.current);
-        socket.current.disconnect();
-        router.replace('/');
-      }
-
-      if (
-        message.type === 'no-valid-id' &&
-        message.singleUseFacilityId === singleUseFacilityId
-      ) {
-        clearInterval(pingInterval.current);
-        socket.current.disconnect();
-        setError(true);
-        setTimeout(() => {
-          router.replace('/');
-        }, 5000);
-      }
-
-      if (
-        message.type === 'set-facility-id' &&
-        message.singleUseFacilityId === singleUseFacilityId
-      ) {
-        console.log(
-          `facilityId, facilityName, facilityRoom, uuid: ${message.facilityId}, ${message.facilityName}, ${message.facilityRoom}, ${message.uuid}`
-        );
-        setFacilityId(message.facilityId);
-        setFacilityName(message.facilityName);
-        setFacilityRoom(message.facilityRoom);
-        setUuid(message.uuid);
-      }
-
-      if (
-        message.type === 'pong-admin' &&
-        message.singleUseFacilityId === singleUseFacilityId
-      ) {
-        setPongs((pongs) => pongs + 1);
-      }
-
-      if (message.type === 'already-connected') {
-        console.log('Already connected');
-        clearInterval(pingInterval.current);
-        socket.current.disconnect();
-        router.replace('/');
+      switch (message.type) {
+        case 'killswitch':
+        case 'no-valid-id':
+        case 'already-connected':
+          clearInterval(pingInterval.current);
+          socket.current.disconnect();
+          setLoading(false);
+          setErrorType(message.type);
+          setError(true);
+          break;
+        case 'set-facility-id':
+          console.log(
+            `facilityId, facilityName, facilityRoom, uuid: ${message.facilityId}, ${message.facilityName}, ${message.facilityRoom}, ${message.uuid}`
+          );
+          setFacilityId(message.facilityId);
+          setFacilityName(message.facilityName);
+          setFacilityRoom(message.facilityRoom);
+          setUuid(message.uuid);
+          setLoading(false);
+          break;
+        case 'pong-admin':
+          setPongs((pongs) => pongs + 1);
+          break;
+        default:
+          break;
       }
     });
 
@@ -101,7 +88,7 @@ export default function NumberCallerPage() {
     socket.current.connect();
 
     return () => {
-      socket.current.disconnect();
+      if (socket.current) socket.current.disconnect();
     };
   }, []);
 
@@ -148,76 +135,9 @@ export default function NumberCallerPage() {
     setCameraOn(!cameraOn);
   };
 
-  const handleScan = async (result) => {
-    if (result) {
-      try {
-        const tempId = result[0].rawValue.split('temp-')[1];
-        console.log('tempId ', tempId);
-        const qrCode = `/api/v1/getTrigger/${tempId}-${singleUseFacilityId}`;
-        console.log('qrCode ', qrCode);
-        const response = await fetch(qrCode);
-        if (!response.ok) {
-          setCameraOn(false);
-          alert('Invalid QR Code');
-          throw new Error('Network response was not ok');
-        }
-        console.log('QR code processed successfully');
-      } catch (error) {
-        setCameraOn(false);
-        console.error('Error processing QR code:', error);
-      }
-    }
-  };
+  if (loading) return <Loading />;
 
-  const ScannerComponent = () => {
-    const allDevices = useDevices();
-
-    return (
-      <>
-        <button
-          onClick={() => setPause((pause) => !pause)}
-          className='mt-2 p-2 bg-yellow-500 hover:bg-yellow-600 rounded-lg'
-        >
-          {pause ? 'Resume' : 'Pause'}
-        </button>
-        <div className='mt-2'>
-          <select
-            onChange={(e) => setDeviceId(e.target.value)}
-            className='p-2 bg-gray-800 text-white rounded-lg'
-          >
-            <option value={undefined}>Select a device</option>
-            {allDevices.map((device, index) => (
-              <option key={index} value={device.deviceId}>
-                {device.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Scanner
-          constraints={{
-            deviceId: deviceId,
-          }}
-          onError={(error) => {
-            console.log(`onError: ${error}'`);
-          }}
-          scanDelay={2000}
-          paused={pause}
-          onScan={handleScan}
-          className='mt-2'
-        />
-      </>
-    );
-  };
-
-  if (error) {
-    return (
-      <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
-        <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
-        <p className='text-2xl'>Invalid ID</p>
-        <p className='text-2xl'>Redirecting after 5 seconds</p>
-      </div>
-    );
-  }
+  if (error) return <Invalid errorType={errorType} />;
 
   return (
     <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
@@ -264,7 +184,9 @@ export default function NumberCallerPage() {
         >
           {cameraOn ? 'Close Camera' : 'Open Camera'}
         </button>
-        <div className='mt-3'>{cameraOn && <ScannerComponent />}</div>
+        <div className='mt-3'>
+          {cameraOn && <QrScanner singleUseFacilityId={singleUseFacilityId} />}
+        </div>
       </div>
     </div>
   );

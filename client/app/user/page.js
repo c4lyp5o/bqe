@@ -28,52 +28,45 @@ export default function TvQRDisplayPage() {
     };
 
     const initializeSocket = async () => {
-      try {
-        const tempId = await qrActivation();
-        console.log('tempId: ', tempId);
+      const tempId = await qrActivation();
+      // console.log('tempId: ', tempId);
 
-        socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
-          autoConnect: true,
+      socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+        autoConnect: true,
+      });
+
+      socket.current.on('connect', () => {
+        // console.log('Connected to WebSocket server as open user');
+        socket.current.send({
+          type: 'identifyopenpublic',
+          tempId: tempId.number,
         });
+        setLoading(false);
+      });
 
-        socket.current.on('connect', () => {
-          console.log('Connected to WebSocket server as open user');
-          socket.current.send({
-            type: 'identifyopenpublic',
-            tempId: tempId.number,
-          });
-          setLoading(false);
-        });
+      socket.current.on('message', (message) => {
+        // console.log('message: ', message);
 
-        socket.current.on('message', (message) => {
-          console.log('message: ', message);
-
-          if (message.type === 'killswitch') {
+        switch (message.type) {
+          case 'killswitch':
             setLoading(false);
             setErrorType('killswitch');
             setError(true);
-          }
-
-          if (
-            message.type === 'open-queue-screen' &&
-            message.tempId === tempId.number
-          ) {
-            console.log('Received open-queue-screen message');
+            break;
+          case 'open-queue-screen':
+            // console.log('Received open-queue-screen message');
             setLoading(true);
             router.push(
               `/user/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
             );
-          }
-        });
+            break;
+        }
+      });
 
-        socket.current.connect();
+      socket.current.connect();
 
-        const url = await QRCode.toDataURL(`temp-${tempId.number}`);
-        setQrCode(url);
-      } catch (err) {
-        console.error(err);
-        setError(true);
-      }
+      const url = await QRCode.toDataURL(`temp-${tempId.number}`);
+      setQrCode(url);
     };
 
     initializeSocket();

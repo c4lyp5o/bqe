@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { io } from 'socket.io-client';
+import { toast } from 'react-toastify';
 
 import QrScanner from '../../../components/qrScanner';
 import Loading from '../../../components/loading';
@@ -43,7 +44,7 @@ export default function NumberCallerPage() {
     });
 
     socket.current.on('connect', () => {
-      console.log('Connected to WebSocket server as admin');
+      // console.log('Connected to WebSocket server as admin');
       setAliveConn(true);
       socket.current.send({ type: 'identifyadmin', singleUseFacilityId });
       startPing();
@@ -63,9 +64,9 @@ export default function NumberCallerPage() {
           setError(true);
           break;
         case 'set-facility-id':
-          console.log(
-            `facilityId, facilityName, facilityRoom, uuid: ${message.facilityId}, ${message.facilityName}, ${message.facilityRoom}, ${message.uuid}`
-          );
+          // console.log(
+          //   `facilityId, facilityName, facilityRoom, uuid: ${message.facilityId}, ${message.facilityName}, ${message.facilityRoom}, ${message.uuid}`
+          // );
           setFacilityId(message.facilityId);
           setFacilityName(message.facilityName);
           setFacilityRoom(message.facilityRoom);
@@ -81,7 +82,6 @@ export default function NumberCallerPage() {
     });
 
     socket.current.on('close', () => {
-      console.log('WebSocket connection closed, attempting to reconnect...');
       setAliveConn(false);
     });
 
@@ -94,11 +94,11 @@ export default function NumberCallerPage() {
 
   const sendNumber = () => {
     if (!aliveConn) {
-      alert('Not connected');
+      toast.error('You are not connected');
       return;
     }
     if (isNaN(parseInt(number))) {
-      alert('Invalid number');
+      toast.error(`${number} is not a valid number`);
       return;
     }
     const currAllNumber = [{ number: parseInt(number), facilityRoom }].concat(
@@ -106,7 +106,7 @@ export default function NumberCallerPage() {
     );
     setAllNumber(currAllNumber);
     setNumber('');
-    console.log(currAllNumber);
+    // console.log(currAllNumber);
     socket.current.send({
       type: 'admin',
       singleUseFacilityId,
@@ -117,7 +117,7 @@ export default function NumberCallerPage() {
   };
 
   const startPing = () => {
-    console.log('ADMIN: send the pings');
+    // console.log('ADMIN: send the pings');
     clearInterval(pingInterval.current);
     pingInterval.current = setInterval(() => {
       socket.current.send({ type: 'ping-admin', singleUseFacilityId });

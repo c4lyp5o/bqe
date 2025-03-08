@@ -1,5 +1,5 @@
 import cache from '../db/cache.js';
-import { customGen } from '../utils/nanoidGen.js';
+import nanoid from '../utils/nanoidGen.js';
 
 const healthCheck = (req, res) => {
   res.status(200).json({ message: 'API is running' });
@@ -15,7 +15,7 @@ const flushCache = (req, res) => {
 };
 
 const getNanoid = (req, res) => {
-  res.status(200).json({ number: customGen() });
+  res.status(200).json({ number: nanoid() });
 };
 
 const getSingleUseFacilityId = (req, res) => {
@@ -27,7 +27,7 @@ const getSingleUseFacilityId = (req, res) => {
     return res.status(400).json({ message: 'Facility ID is required' });
   }
 
-  const singleUseFacilityId = customGen();
+  const singleUseFacilityId = nanoid();
   cache.set(singleUseFacilityId, {
     facilityId,
     facilityName,

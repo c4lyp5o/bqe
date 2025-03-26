@@ -4,13 +4,13 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "install-client": "cd client && npm install",
+    "install-client": "cd rr-client && npm install",
     "install-server": "npm install",
-    "dev-client": "cd client && npm run dev",
+    "dev-client": "cd rr-client && npm run dev",
     "dev-server": "nodemon server.js",
     "dev": "concurrently \"npm run dev-server\" \"npm run dev-client\"",
-    "build-client": "cd client && npm run build",
-    "start-client": "cd client && npm start",
+    "build-client": "cd rr-client && npm run build",
+    "start-client": "cd rr-client && npm start",
     "server": "node server.js",
     "start": "concurrently \"npm run server\" \"npm run start-client\""
   },

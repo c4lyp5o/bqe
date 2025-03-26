@@ -11,9 +11,9 @@ import simpleAuth from '../middleware/simpleAuth.js';
 const router = express.Router();
 
 router.get('/health', healthCheck);
-router.get('/showcache', simpleAuth, showCache);
-router.get('/flushcache', simpleAuth, flushCache);
-router.get('/getnanoid', simpleAuth, getNanoid);
-router.post('/getsingle', simpleAuth, getSingleUseFacilityId);
+router.get('/showcache', showCache);
+router.get('/flushcache', flushCache);
+router.get('/getnanoid', getNanoid);
+router.post('/getsingle', getSingleUseFacilityId);
 
 export default router;

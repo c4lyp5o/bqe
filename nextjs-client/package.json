@@ -1,6 +1,8 @@
 {
-  "name": "client",
+  "name": "bqe-nextjs-client",
+  "private": true,
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",

@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express, { json } from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
+import path from 'path';
 
 dotenv.config();
 
@@ -28,8 +29,13 @@ app.use(
     origin: '*',
   })
 );
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 app.use('/api/v1', httpRoute(ioServer));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+});
 
 app.use(notFound);
 app.use(errorHandler);

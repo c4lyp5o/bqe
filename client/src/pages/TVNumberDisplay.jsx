@@ -1,18 +1,16 @@
-'use client';
-
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams } from 'react-router';
 import QRCode from 'qrcode';
 import { io } from 'socket.io-client';
 
-import Loading from '../../../components/loading';
-import Invalid from '../../../components/invalid';
+import Loading from '../components/Loading';
+import Invalid from '../components/Invalid';
 
 export default function TvNumberDisplayPage() {
-  const { multiId } = useParams();
+  const { multiId1, multiId2, multiId3 } = useParams();
 
-  const tempId = multiId[0]; // from open tv display
-  const singleUseFacilityId = multiId[2]; // from number caller
+  const tempId = multiId1; // from open tv display
+  const singleUseFacilityId = multiId3; // from number caller
 
   // page status
   const [aliveConn, setAliveConn] = useState(false);
@@ -38,23 +36,20 @@ export default function TvNumberDisplayPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
       autoConnect: true,
     });
 
     socket.current.on('connect', () => {
-      // console.log('Connected to WebSocket server as tv display mode');
       setAliveConn(true);
       socket.current.send({
         type: 'identifyclient',
-        singleUseFacilityId,
+        singleUseFacilityId: singleUseFacilityId,
       });
       startPing();
     });
 
     socket.current.on('message', (message) => {
-      // console.log(message);
-
       switch (message.type) {
         case 'killswitch':
         case 'no-valid-id':
@@ -66,16 +61,12 @@ export default function TvNumberDisplayPage() {
           setError(true);
           break;
         case 'set-facility-id':
-          // console.log(
-          //   `facilityId, facilityName, uuid: ${message.facilityId}, ${message.facilityName}, ${message.uuid}`
-          // );
           setFacilityId(message.facilityId);
           setFacilityName(message.facilityName);
           setUuid(message.uuid);
           setLoading(false);
           break;
         case 'admin':
-          // console.log('message: ', message);
           setMessage(message.numbers);
           playSound(() => {
             announceNumber(
@@ -101,7 +92,6 @@ export default function TvNumberDisplayPage() {
     QRCode.toDataURL(
       `${window.location.origin}/public/${singleUseFacilityId}`
     ).then((url) => {
-      // console.log(url);
       setQrCode(url);
     });
 
@@ -116,7 +106,6 @@ export default function TvNumberDisplayPage() {
   }, [facilityId]);
 
   const startPing = () => {
-    // console.log('CLIENT: send the pings');
     pingInterval.current = setInterval(() => {
       socket.current.send({
         type: 'ping-client',

@@ -29,7 +29,7 @@ export default function FrontFacing() {
   const refreshInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io('http://localhost:5000', {
+    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
       autoConnect: true,
     });
 
@@ -82,26 +82,26 @@ export default function FrontFacing() {
   if (error) return <Invalid errorType={errorType} />;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
-      <h1 className="text-4xl font-bold mb-8">Queue Management System</h1>
-      <div className="w-full max-w-md text-center">
+    <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
+      <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
+      <div className='w-full max-w-md text-center'>
         {/* <p className='mb-2 text-lg'>
                     Facility ID: <span className='font-semibold'>{facilityId}</span>
                 </p> */}
-        <p className="mb-2 text-lg">
-          <span className="font-semibold">{facilityName}</span>
+        <p className='mb-2 text-lg'>
+          <span className='font-semibold'>{facilityName}</span>
         </p>
         {/* <p className='mb-2 text-lg'>
                     UUID: <span className='font-semibold'>{uuid}</span>
                 </p> */}
-        <p className="mb-4 text-2xl">
-          Current Number: <span className="font-bold">{number[0]?.number}</span>
+        <p className='mb-4 text-2xl'>
+          Current Number: <span className='font-bold'>{number[0]?.number}</span>
         </p>
         <button
           onClick={() => {
             window.location.reload();
           }}
-          className="w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+          className='w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold'
         >
           Refresh Page
         </button>

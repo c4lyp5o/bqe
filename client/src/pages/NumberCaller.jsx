@@ -37,7 +37,7 @@ export default function NumberCallerPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io('http://localhost:5000', {
+    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
       autoConnect: true,
     });
 
@@ -130,51 +130,51 @@ export default function NumberCallerPage() {
   if (error) return <Invalid errorType={errorType} />;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
-      <h1 className="text-4xl font-bold mb-8">Number Caller Page</h1>
-      <div className="w-full max-w-md">
-        <p className="mb-2">Connection is alive: {aliveConn ? 'Yes' : 'No'}</p>
-        <p className="mb-2">Pongs received: {pongs}</p>
-        <p className="mb-2">Facility ID: {facilityId}</p>
-        <p className="mb-2">Facility Name: {facilityName}</p>
-        <p className="mb-2">Facility Room: {facilityRoom}</p>
-        <p className="mb-2">Single Use Facility ID: {singleUseFacilityId}</p>
-        <p className="mb-2">UUID: {uuid}</p>
-        <p className="mb-2">
+    <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4'>
+      <h1 className='text-4xl font-bold mb-8'>Number Caller Page</h1>
+      <div className='w-full max-w-md'>
+        <p className='mb-2'>Connection is alive: {aliveConn ? 'Yes' : 'No'}</p>
+        <p className='mb-2'>Pongs received: {pongs}</p>
+        <p className='mb-2'>Facility ID: {facilityId}</p>
+        <p className='mb-2'>Facility Name: {facilityName}</p>
+        <p className='mb-2'>Facility Room: {facilityRoom}</p>
+        <p className='mb-2'>Single Use Facility ID: {singleUseFacilityId}</p>
+        <p className='mb-2'>UUID: {uuid}</p>
+        <p className='mb-2'>
           All Numbers:{' '}
           {allNumber
             .map((item) => `${item.number} - ${item.facilityRoom}`)
             .join(', ')}
         </p>
         <input
-          type="text"
+          type='text'
           value={number}
           onChange={(e) => setNumber(e.target.value)}
-          placeholder="Enter number"
-          className="w-full p-3 mb-4 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder='Enter number'
+          className='w-full p-3 mb-4 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
         />
         <button
           onClick={sendNumber}
           disabled={!aliveConn}
-          className="w-full p-3 mb-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold disabled:opacity-50"
+          className='w-full p-3 mb-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold disabled:opacity-50'
         >
           Send
         </button>
         <button
           onClick={logOut}
           disabled={!aliveConn}
-          className="w-full p-3 mb-4 bg-red-600 hover:bg-red-700 rounded-lg font-semibold disabled:opacity-50"
+          className='w-full p-3 mb-4 bg-red-600 hover:bg-red-700 rounded-lg font-semibold disabled:opacity-50'
         >
           Log Out
         </button>
         <button
           onClick={triggerCamera}
           disabled={!aliveConn}
-          className="w-full p-3 mb-4 bg-green-600 hover:bg-green-700 rounded-lg font-semibold disabled:opacity-50"
+          className='w-full p-3 mb-4 bg-green-600 hover:bg-green-700 rounded-lg font-semibold disabled:opacity-50'
         >
           {cameraOn ? 'Close Camera' : 'Open Camera'}
         </button>
-        <div className="mt-3">
+        <div className='mt-3'>
           {cameraOn && <QrScanner singleUseFacilityId={singleUseFacilityId} />}
         </div>
       </div>

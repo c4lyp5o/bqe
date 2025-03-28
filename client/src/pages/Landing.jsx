@@ -29,18 +29,15 @@ export default function Landing() {
     const facility = mockArray.find((fac) => fac.facilityId === facilityId);
 
     try {
-      const { data } = await axios.post(
-        'http://localhost:5000/api/v1/getsingle',
-        {
-          facilityId: facility.facilityId,
-          facilityName: facility.facilityName,
-          facilityRoom: facilityRoom,
-        }
-      );
+      const { data } = await axios.post('/api/v1/getsingle', {
+        facilityId: facility.facilityId,
+        facilityName: facility.facilityName,
+        facilityRoom: facilityRoom,
+      });
 
       navigate(`/numbercaller/${data.singleUseFacilityId}`);
     } catch (error) {
-      console.error(error);
+      // console.error(error);
       toast.error('We have encountered an error. Please try again.');
     }
   };
@@ -50,12 +47,12 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold mb-8">Queue Management System</h1>
-      <div className="w-full max-w-md">
+    <div className='min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center'>
+      <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
+      <div className='w-full max-w-md'>
         <form
           onSubmit={goToNumberCaller}
-          className="flex flex-col items-center justify-center"
+          className='flex flex-col items-center justify-center'
         >
           <select
             value={facilityId}
@@ -64,9 +61,9 @@ export default function Landing() {
               setFacilityId(e.target.value);
               setFacilityRoom('');
             }}
-            className="w-full p-3 mb-4 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className='w-full p-3 mb-4 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
           >
-            <option value="">Select Facility</option>
+            <option value=''>Select Facility</option>
             {mockArray.map((facility) => (
               <option key={facility.facilityId} value={facility.facilityId}>
                 {facility.facilityName}
@@ -78,9 +75,9 @@ export default function Landing() {
               value={facilityRoom}
               required
               onChange={(e) => setFacilityRoom(e.target.value)}
-              className="w-full p-3 mb-4 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className='w-full p-3 mb-4 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             >
-              <option value="">Select Room</option>
+              <option value=''>Select Room</option>
               {mockRoomArray.map((room) => (
                 <option key={room.facilityRoom} value={room.facilityRoom}>
                   {room.roomName}
@@ -89,17 +86,17 @@ export default function Landing() {
             </select>
           )}
           <button
-            type="submit"
-            className="w-full p-3 mb-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+            type='submit'
+            className='w-full p-3 mb-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold'
           >
             Number Caller
           </button>
         </form>
-        <hr className="w-full border-t border-gray-700 my-4" />
+        <hr className='w-full border-t border-gray-700 my-4' />
         <button
-          type="button"
+          type='button'
           onClick={gotoTvDisplay}
-          className="w-full p-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold"
+          className='w-full p-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold'
         >
           TV Display
         </button>

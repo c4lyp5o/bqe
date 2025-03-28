@@ -10,9 +10,8 @@
     "dev-server": "nodemon server.js",
     "dev": "concurrently \"npm run dev-server\" \"npm run dev-client\"",
     "build-client": "cd client && npm run build",
-    "start-client": "cd client && npm start",
     "server": "node server.js",
-    "start": "concurrently \"npm run server\" \"npm run start-client\""
+    "start": "npm run build-client && npm run server"
   },
   "keywords": [],
   "author": "",

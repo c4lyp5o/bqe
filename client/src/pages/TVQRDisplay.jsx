@@ -24,7 +24,7 @@ export default function TvQRDisplayPage() {
     const initializeSocket = async () => {
       const { data } = await axios.get('/api/v1/getnanoid');
       const tempId = data.number;
-      console.log('tempId: ', data);
+      // console.log('tempId: ', data);
 
       socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
         autoConnect: true,

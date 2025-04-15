@@ -50,9 +50,9 @@ export default function QrScanner({ singleUseFacilityId }) {
         constraints={{
           deviceId: deviceId,
         }}
-        onError={(error) => {
-          console.log(`onError: ${error}'`);
-        }}
+        // onError={(error) => {
+        //   console.log(`onError: ${error}'`);
+        // }}
         scanDelay={2000}
         paused={pause}
         onScan={handleScan}

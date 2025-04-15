@@ -24,11 +24,7 @@ const server = createServer(app);
 const ioServer = setupSocketIo(server);
 
 app.use(json());
-app.use(
-  cors({
-    origin: '*',
-  })
-);
+app.use(cors());
 app.use(express.static(path.join(process.cwd(), 'public')));
 
 app.use('/api/v1', httpRoute(ioServer));
@@ -41,5 +37,5 @@ app.use(notFound);
 app.use(errorHandler);
 
 server.listen(process.env.PORT, () => {
-  logger.info(`Server is running on http://localhost:${process.env.PORT}`);
+  logger.info(`[SERVER] Server is running on {process.env.PORT}`);
 });

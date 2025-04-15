@@ -1,13 +1,15 @@
+import { createClient } from 'redis';
+import { createAdapter } from '@socket.io/redis-adapter';
 import dotenv from 'dotenv';
 import { Server } from 'socket.io';
 
-import cache from '../db/cache.js';
+import redis from '../db/redis.js';
 import logger from '../utils/logger.js';
 import MESSAGE_TYPES from '../utils/messageTypes.js';
 
 dotenv.config();
 
-const handleIdentifyAdmin = (socket, message) => {
+const handleIdentifyAdmin = async (socket, message) => {
   logger.info(
     `[IDADMIN-INIT] Admin identified with singleUseFacilityId: ${message.singleUseFacilityId}`
   );
@@ -15,7 +17,9 @@ const handleIdentifyAdmin = (socket, message) => {
   socket.singleUseFacilityId = message.singleUseFacilityId;
   socket.type = MESSAGE_TYPES.IDENTIFY_ADMIN;
 
-  const isConnected = cache.get(`${message.singleUseFacilityId}-connected`);
+  const isConnected = JSON.parse(
+    await redis.get(`${message.singleUseFacilityId}-connected`)
+  );
   if (isConnected) {
     const messageObject = {
       type: MESSAGE_TYPES.ALREADY_CONNECTED,
@@ -29,14 +33,17 @@ const handleIdentifyAdmin = (socket, message) => {
     return;
   }
 
-  const facilityData = cache.get(message.singleUseFacilityId);
+  const facilityData = JSON.parse(await redis.get(message.singleUseFacilityId));
   // logger.info('WS facilityData: ', facilityData);
 
   if (facilityData) {
     socket.facilityId = facilityData.facilityId;
     socket.facilityName = facilityData.facilityName;
 
-    cache.set(`${message.singleUseFacilityId}-connected`, true);
+    await redis.set(
+      `${message.singleUseFacilityId}-connected`,
+      JSON.stringify(true)
+    );
 
     const messageObject = {
       type: MESSAGE_TYPES.SET_FACILITY_ID,
@@ -65,12 +72,13 @@ const handleIdentifyAdmin = (socket, message) => {
 };
 
 const handleAdminMessage = async (io, message) => {
-  const currentNumbers = cache.get(`${message.facilityId}-q`) || [];
+  const currentNumbers =
+    JSON.parse(await redis.get(`${message.facilityId}-q`)) || [];
   const updatedNumbers = [
     { number: message.number, facilityRoom: message.facilityRoom },
   ].concat(currentNumbers);
 
-  cache.set(`${message.facilityId}-q`, updatedNumbers);
+  await redis.set(`${message.facilityId}-q`, JSON.stringify(updatedNumbers));
 
   const messageObject = {
     type: MESSAGE_TYPES.ADMIN,
@@ -102,14 +110,14 @@ const handleIdentifyOpenPublic = (socket, message) => {
   socket.tempId = message.tempId;
 };
 
-const handleAdminLogout = (socket, message) => {
+const handleAdminLogout = async (socket, message) => {
   logger.info(
     `[LOGOUTADMIN] Admin ${socket.id}/${socket.singleUseFacilityId} logged out`
   );
-  cache.delete(message.singleUseFacilityId);
+  await redis.del(message.singleUseFacilityId);
 };
 
-const handleIdentifyClient = (socket, message) => {
+const handleIdentifyClient = async (socket, message) => {
   logger.info(
     `[IDCLIENT-INIT] Client ${socket.id} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
   );
@@ -117,7 +125,7 @@ const handleIdentifyClient = (socket, message) => {
   socket.singleUseFacilityId = message.singleUseFacilityId;
   socket.type = MESSAGE_TYPES.IDENTIFY_CLIENT;
 
-  const facilityData = cache.get(message.singleUseFacilityId);
+  const facilityData = JSON.parse(await redis.get(message.singleUseFacilityId));
   // logger.info('socket facilityData: ', facilityData);
 
   if (facilityData) {
@@ -150,7 +158,7 @@ const handleIdentifyClient = (socket, message) => {
   }
 };
 
-const handleIdentifyPublic = (socket, message) => {
+const handleIdentifyPublic = async (socket, message) => {
   logger.info(
     `[IDPUBLIC-INIT] Public ${socket.id} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
   );
@@ -158,14 +166,15 @@ const handleIdentifyPublic = (socket, message) => {
   socket.singleUseFacilityId = message.singleUseFacilityId;
   socket.type = MESSAGE_TYPES.IDENTIFY_PUBLIC;
 
-  const facilityData = cache.get(message.singleUseFacilityId);
+  const facilityData = JSON.parse(await redis.get(message.singleUseFacilityId));
   // logger.info('socket facilityData: ', facilityData);
 
   if (facilityData) {
     socket.facilityId = facilityData.facilityId;
     socket.facilityName = facilityData.facilityName;
 
-    const number = cache.get(`${facilityData.facilityId}-q`) || [];
+    const number =
+      JSON.parse(await redis.get(`${facilityData.facilityId}-q`)) || [];
 
     const messageObject = {
       type: MESSAGE_TYPES.CURRENT_Q,
@@ -211,8 +220,37 @@ const handlePingMessage = async (io, message) => {
   }
 };
 
-export default function setupSocketIo(server) {
+export default async function setupSocketIo(server) {
+  const redisUrl = `redis://${process.env.REDIS_USER || ''}:${
+    process.env.REDIS_PASSWORD
+  }@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`;
+  logger.info(`[REDIS] Redis URL: ${redisUrl}`);
+
+  const pubClient = createClient({
+    url: redisUrl,
+  });
+  const subClient = pubClient.duplicate();
+
+  // Add error handlers for pubClient
+  pubClient.on('error', (err) => {
+    logger.error(`[REDIS] Redis pubClient error: ${err.message}`);
+  });
+
+  // Add error handlers for subClient
+  subClient.on('error', (err) => {
+    logger.error(`[REDIS] Redis subClient error: ${err.message}`);
+  });
+
+  await Promise.all([pubClient.connect(), subClient.connect()])
+    .then(() => {
+      logger.info('[REDIS] Pub/Sub clients connected to Redis');
+    })
+    .catch((err) => {
+      logger.error('[REDIS] Pub/Sub clients error: ', err);
+    });
+
   const io = new Server(server, {
+    adapter: createAdapter(pubClient, subClient),
     cors: {
       origin: '*',
     },
@@ -251,14 +289,14 @@ export default function setupSocketIo(server) {
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       logger.info(
         `[WSCLOSE] ${socket.id}/${socket.singleUseFacilityId}/${socket.type} disconnected`
       );
 
       switch (socket.type) {
         case MESSAGE_TYPES.IDENTIFY_ADMIN:
-          cache.delete(`${socket.singleUseFacilityId}-connected`);
+          await redis.del(`${socket.singleUseFacilityId}-connected`);
           break;
         default:
           break;

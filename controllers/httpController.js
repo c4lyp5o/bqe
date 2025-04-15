@@ -1,16 +1,24 @@
-import cache from '../db/cache.js';
+import redis from '../db/redis.js';
 import nanoid from '../utils/nanoidGen.js';
 
 const healthCheck = (req, res) => {
   res.status(200).json({ message: 'API is running' });
 };
 
-const showCache = (req, res) => {
-  res.status(200).json(cache.dump());
+const showCache = async (req, res) => {
+  const keys = await redis.keys('*');
+  const cache = {};
+
+  for (const key of keys) {
+    const value = await redis.get(key);
+    cache[key] = JSON.parse(value);
+  }
+
+  res.status(200).json(cache);
 };
 
-const flushCache = (req, res) => {
-  cache.clear();
+const flushCache = async (req, res) => {
+  await redis.flushAll();
   res.status(200).json({ message: 'Cache flushed' });
 };
 
@@ -18,9 +26,7 @@ const getNanoid = (req, res) => {
   res.status(200).json({ number: nanoid() });
 };
 
-const getSingleUseFacilityId = (req, res) => {
-  // console.log('express body: ', req.body);
-
+const getSingleUseFacilityId = async (req, res) => {
   const { facilityId, facilityName, facilityRoom } = req.body;
 
   if (!facilityId) {
@@ -28,11 +34,16 @@ const getSingleUseFacilityId = (req, res) => {
   }
 
   const singleUseFacilityId = nanoid();
-  cache.set(singleUseFacilityId, {
-    facilityId,
-    facilityName,
-    facilityRoom,
-  });
+
+  // Serialize the object before storing it in Redis
+  await redis.set(
+    singleUseFacilityId,
+    JSON.stringify({
+      facilityId,
+      facilityName,
+      facilityRoom,
+    })
+  );
 
   res.status(200).json({ singleUseFacilityId });
 };
@@ -49,7 +60,7 @@ const triggerOpenQueueScreen = async (req, res, ioServer) => {
   const tempId = singleUseFacilityIdAndTempId[0];
   const singleUseFacilityId = singleUseFacilityIdAndTempId[1];
 
-  const facilityId = cache.get(singleUseFacilityId);
+  const facilityId = JSON.parse(await redis.get(singleUseFacilityId));
   if (!facilityId) {
     res.status(404).json({ message: 'Invalid facilityId' });
     return;

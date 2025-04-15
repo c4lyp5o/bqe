@@ -12,9 +12,9 @@ const mockArray = [
 
 // should be from resource
 const mockRoomArray = [
-  { facilityRoom: 'Room 1', roomName: 'Room 1' },
-  { facilityRoom: 'Room 2', roomName: 'Room 2' },
-  { facilityRoom: 'Room 3', roomName: 'Room 3' },
+  { facilityRoom: 'Bilik 1', roomName: 'Bilik 1' },
+  { facilityRoom: 'Bilik 2', roomName: 'Bilik 2' },
+  { facilityRoom: 'Bilik 3', roomName: 'Bilik 3' },
 ];
 
 export default function Landing() {

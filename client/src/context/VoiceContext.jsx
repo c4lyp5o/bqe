@@ -26,8 +26,6 @@ const VoiceProvider = ({ children }) => {
       } else if (availableVoices.length) {
         setSelectedVoice(availableVoices[0]); // If no preferred, use first
         // console.log(`Using default voice: ${availableVoices[0].name}`);
-      } else {
-        console.log('No voices available.');
       }
     };
 

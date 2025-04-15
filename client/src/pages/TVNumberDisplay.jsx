@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useContext } from 'react';
 import { useParams } from 'react-router';
 import QRCode from 'qrcode';
 import { io } from 'socket.io-client';
+import { GlobalVoiceContext } from '../context/VoiceContext';
 
 import Loading from '../components/Loading';
 import Invalid from '../components/Invalid';
@@ -11,6 +12,8 @@ export default function TvNumberDisplayPage() {
 
   const tempId = multiId1; // from open tv display
   const singleUseFacilityId = multiId3; // from number caller
+
+  const { selectedVoice } = GlobalVoiceContext();
 
   // page status
   const [aliveConn, setAliveConn] = useState(false);
@@ -117,12 +120,24 @@ export default function TvNumberDisplayPage() {
 
   const announceNumber = (number, facilityRoom) => {
     const digits = number.toString().split('');
-    const utterances = [`Number `, ...digits, `, ${facilityRoom}`];
+    const utterances = [
+      `Nombor `,
+      ...digits,
+      facilityRoom.split(' ')[0],
+      facilityRoom.split(' ')[1],
+    ];
 
-    utterances.forEach((utterance) => {
-      const speech = new SpeechSynthesisUtterance(utterance);
-      speechSynthesis.speak(speech);
-    });
+    // console.log('Utterances:', utterances);
+
+    const handleSpeak = () => {
+      utterances.forEach((utterance) => {
+        const speech = new SpeechSynthesisUtterance(utterance);
+        speech.voice = selectedVoice;
+        speechSynthesis.speak(speech);
+      });
+    };
+
+    handleSpeak();
   };
 
   if (loading) return <Loading />;

@@ -90,14 +90,9 @@ export default function TvNumberDisplayPage() {
     socket.current.connect();
 
     QRCode.toDataURL(
-      `${window.location.origin}/public/${singleUseFacilityId}`
+      `${window.location.origin}/ff/${singleUseFacilityId}`
     ).then((url) => {
       setQrCode(url);
-    });
-
-    const voices = speechSynthesis.getVoices();
-    voices.forEach((voice) => {
-      console.log(`Voice: ${voice.name}, Language: ${voice.lang}`);
     });
 
     return () => {

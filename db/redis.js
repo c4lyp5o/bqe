@@ -8,6 +8,14 @@ const redisClient = createClient({
   url: `redis://${process.env.REDIS_USER || ''}:${process.env.REDIS_PASSWORD}@${
     process.env.REDIS_HOST
   }:${process.env.REDIS_PORT}`,
+  socket: {
+    reconnectStrategy: (retries) => {
+      if (retries > 10) {
+        return new Error('Retry attempts exhausted');
+      }
+      return Math.min(retries * 100, 3000);
+    },
+  },
 });
 
 redisClient.on('error', (err) => {
@@ -20,6 +28,7 @@ redisClient.on('error', (err) => {
     logger.info('[REDIS] Connected to Redis');
   } catch (err) {
     logger.error(`[REDIS] Failed to connect to Redis: ${err.message}`);
+    process.exit(1);
   }
 })();
 

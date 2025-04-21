@@ -1,8 +1,7 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
 // should be from resource
 const mockArray = [
@@ -13,13 +12,13 @@ const mockArray = [
 
 // should be from resource
 const mockRoomArray = [
-  { facilityRoom: 'Room 1', roomName: 'Room 1' },
-  { facilityRoom: 'Room 2', roomName: 'Room 2' },
-  { facilityRoom: 'Room 3', roomName: 'Room 3' },
+  { facilityRoom: 'Bilik 1', roomName: 'Bilik 1' },
+  { facilityRoom: 'Bilik 2', roomName: 'Bilik 2' },
+  { facilityRoom: 'Bilik 3', roomName: 'Bilik 3' },
 ];
 
-export default function HomePage() {
-  const router = useRouter();
+export default function Landing() {
+  const navigate = useNavigate();
 
   const [facilityId, setFacilityId] = useState('');
   const [facilityRoom, setFacilityRoom] = useState('');
@@ -30,33 +29,21 @@ export default function HomePage() {
     const facility = mockArray.find((fac) => fac.facilityId === facilityId);
 
     try {
-      const response = await fetch('/api/v1/getSingle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          facilityId: facility.facilityId,
-          facilityName: facility.facilityName,
-          facilityRoom: facilityRoom,
-        }),
+      const { data } = await axios.post('/api/v1/getsingle', {
+        facilityId: facility.facilityId,
+        facilityName: facility.facilityName,
+        facilityRoom: facilityRoom,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save facility ID');
-      }
-
-      const data = await response.json();
-      const singleUseFacilityId = data.singleUseFacilityId;
-
-      router.push(`/admin/${singleUseFacilityId}`);
+      navigate(`/numbercaller/${data.singleUseFacilityId}`);
     } catch (error) {
+      // console.error(error);
       toast.error('We have encountered an error. Please try again.');
     }
   };
 
   const gotoTvDisplay = () => {
-    router.push(`/user`);
+    navigate('/tv');
   };
 
   return (
@@ -107,6 +94,7 @@ export default function HomePage() {
         </form>
         <hr className='w-full border-t border-gray-700 my-4' />
         <button
+          type='button'
           onClick={gotoTvDisplay}
           className='w-full p-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold'
         >

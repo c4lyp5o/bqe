@@ -1,16 +1,14 @@
-'use client';
-
 import { useEffect, useState, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useNavigate, useParams } from 'react-router';
 import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
 
-import QrScanner from '../../../components/qrScanner';
-import Loading from '../../../components/loading';
-import Invalid from '../../../components/invalid';
+import QrScanner from '../components/QrScanner';
+import Loading from '../components/Loading';
+import Invalid from '../components/Invalid';
 
 export default function NumberCallerPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { singleUseFacilityId } = useParams();
 
   // page status
@@ -39,20 +37,17 @@ export default function NumberCallerPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
       autoConnect: true,
     });
 
     socket.current.on('connect', () => {
-      // console.log('Connected to WebSocket server as admin');
       setAliveConn(true);
       socket.current.send({ type: 'identifyadmin', singleUseFacilityId });
       startPing();
     });
 
     socket.current.on('message', (message) => {
-      // console.log(message);
-
       switch (message.type) {
         case 'killswitch':
         case 'no-valid-id':
@@ -64,9 +59,6 @@ export default function NumberCallerPage() {
           setError(true);
           break;
         case 'set-facility-id':
-          // console.log(
-          //   `facilityId, facilityName, facilityRoom, uuid: ${message.facilityId}, ${message.facilityName}, ${message.facilityRoom}, ${message.uuid}`
-          // );
           setFacilityId(message.facilityId);
           setFacilityName(message.facilityName);
           setFacilityRoom(message.facilityRoom);
@@ -106,7 +98,6 @@ export default function NumberCallerPage() {
     );
     setAllNumber(currAllNumber);
     setNumber('');
-    // console.log(currAllNumber);
     socket.current.send({
       type: 'admin',
       singleUseFacilityId,
@@ -117,7 +108,6 @@ export default function NumberCallerPage() {
   };
 
   const startPing = () => {
-    // console.log('ADMIN: send the pings');
     clearInterval(pingInterval.current);
     pingInterval.current = setInterval(() => {
       socket.current.send({ type: 'ping-admin', singleUseFacilityId });
@@ -128,7 +118,7 @@ export default function NumberCallerPage() {
     clearInterval(pingInterval.current);
     socket.current.send({ type: 'logout-admin', singleUseFacilityId });
     socket.current.disconnect();
-    router.replace('/');
+    navigate('/');
   };
 
   const triggerCamera = () => {

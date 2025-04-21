@@ -18,7 +18,7 @@ const handleIdentifyAdmin = (ws, message, ip) => {
   );
 
   ws.singleUseFacilityId = message.singleUseFacilityId;
-  ws.type = MESSAGE_TYPES.IDENTIFY_ADMIN;
+  ws.type = MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER;
 
   const isConnected = cache.get(`${message.singleUseFacilityId}-connected`);
   if (isConnected) {
@@ -78,7 +78,7 @@ const handleAdminMessage = (wss, message) => {
   cache.set(`${message.facilityId}-q`, updatedNumbers);
 
   const messageObject = {
-    type: MESSAGE_TYPES.ADMIN,
+    type: MESSAGE_TYPES.NUMBER_CALLER,
     facilityId: message.facilityId,
     numbers: updatedNumbers,
   };
@@ -114,13 +114,13 @@ const handleIdentifyOpenPublic = (ws, message, ip) => {
   ws.tempId = message.tempId;
 };
 
-const handleIdentifyClient = (ws, message, ip) => {
+const handleidentifytvnumberdisplay = (ws, message, ip) => {
   logger.info(
     `[IDCLIENT-INIT] Client ${ip}/${ws.uuid} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
   );
 
   ws.singleUseFacilityId = message.singleUseFacilityId;
-  ws.type = MESSAGE_TYPES.IDENTIFY_CLIENT;
+  ws.type = MESSAGE_TYPES.IDENTIFY_TVNUMBER_DISPLAY;
 
   const facilityData = cache.get(message.singleUseFacilityId);
   // logger.info('WS facilityData: ', facilityData);
@@ -201,9 +201,9 @@ const handleIdentifyPublic = (ws, message, ip) => {
 const handlePingMessage = (wss, message) => {
   const messageObject = {
     type:
-      message.type === MESSAGE_TYPES.PING_ADMIN
-        ? MESSAGE_TYPES.PONG_ADMIN
-        : MESSAGE_TYPES.PONG_CLIENT,
+      message.type === MESSAGE_TYPES.PING_NUMBER_CALLER
+        ? MESSAGE_TYPES.PONG_NUMBER_CALLER
+        : MESSAGE_TYPES.PONG_TVNUMBER_DISPLAY,
     singleUseFacilityId: message.singleUseFacilityId,
   };
 
@@ -231,26 +231,26 @@ export default (server) => {
       const message = JSON.parse(data);
 
       switch (message.type) {
-        case MESSAGE_TYPES.IDENTIFY_ADMIN:
+        case MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER:
           handleIdentifyAdmin(ws, message, ip);
           break;
         case MESSAGE_TYPES.ADMIN:
           handleAdminMessage(websocketServer, message);
           break;
-        case MESSAGE_TYPES.LOGOUT_ADMIN:
+        case MESSAGE_TYPES.LOGOUT_NUMBER_CALLER:
           handleAdminLogout(ws, message, ip);
           break;
         case MESSAGE_TYPES.IDENTIFY_OPEN_PUBLIC:
           handleIdentifyOpenPublic(ws, message, ip);
           break;
-        case MESSAGE_TYPES.IDENTIFY_CLIENT:
-          handleIdentifyClient(ws, message, ip);
+        case MESSAGE_TYPES.IDENTIFY_TVNUMBER_DISPLAY:
+          handleidentifytvnumberdisplay(ws, message, ip);
           break;
         case MESSAGE_TYPES.IDENTIFY_PUBLIC:
           handleIdentifyPublic(ws, message, ip);
           break;
-        case MESSAGE_TYPES.PING_ADMIN:
-        case MESSAGE_TYPES.PING_CLIENT:
+        case MESSAGE_TYPES.PING_NUMBER_CALLER:
+        case MESSAGE_TYPES.PING_TVNUMBER_DISPLAY:
           handlePingMessage(websocketServer, message);
           break;
         default:
@@ -265,7 +265,7 @@ export default (server) => {
       );
 
       switch (ws.type) {
-        case MESSAGE_TYPES.IDENTIFY_ADMIN:
+        case MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER:
           cache.delete(`${ws.singleUseFacilityId}-connected`);
           break;
         default:

@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useContext } from 'react';
 import { useParams } from 'react-router';
 import QRCode from 'qrcode';
 import { io } from 'socket.io-client';
+import { GlobalVoiceContext } from '../context/VoiceContext';
 
 import Loading from '../components/Loading';
 import Invalid from '../components/Invalid';
@@ -11,6 +12,8 @@ export default function TvNumberDisplayPage() {
 
   const tempId = multiId1; // from open tv display
   const singleUseFacilityId = multiId3; // from number caller
+
+  const { selectedVoice } = GlobalVoiceContext();
 
   // page status
   const [aliveConn, setAliveConn] = useState(false);
@@ -36,14 +39,18 @@ export default function TvNumberDisplayPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
+    const wsUrl = `${
+      window.location.host.includes('localhost') ? 'ws://' : 'wss://'
+    }${window.location.host}`;
+
+    socket.current = io(wsUrl, {
       autoConnect: true,
     });
 
     socket.current.on('connect', () => {
       setAliveConn(true);
       socket.current.send({
-        type: 'identifyclient',
+        type: 'identifytvnumberdisplay',
         singleUseFacilityId: singleUseFacilityId,
       });
       startPing();
@@ -66,7 +73,7 @@ export default function TvNumberDisplayPage() {
           setUuid(message.uuid);
           setLoading(false);
           break;
-        case 'admin':
+        case 'numbercaller':
           setMessage(message.numbers);
           playSound(() => {
             announceNumber(
@@ -75,7 +82,7 @@ export default function TvNumberDisplayPage() {
             );
           });
           break;
-        case 'pong-client':
+        case 'pong-tvnumberdisplay':
           setPongs((pongs) => pongs + 1);
           break;
         default:
@@ -103,7 +110,7 @@ export default function TvNumberDisplayPage() {
   const startPing = () => {
     pingInterval.current = setInterval(() => {
       socket.current.send({
-        type: 'ping-client',
+        type: 'ping-tvnumberdisplay',
         singleUseFacilityId,
       });
     }, 30000);
@@ -117,12 +124,24 @@ export default function TvNumberDisplayPage() {
 
   const announceNumber = (number, facilityRoom) => {
     const digits = number.toString().split('');
-    const utterances = [`Number `, ...digits, `, ${facilityRoom}`];
+    const utterances = [
+      `Nombor `,
+      ...digits,
+      facilityRoom.split(' ')[0],
+      facilityRoom.split(' ')[1],
+    ];
 
-    utterances.forEach((utterance) => {
-      const speech = new SpeechSynthesisUtterance(utterance);
-      speechSynthesis.speak(speech);
-    });
+    // console.log('Utterances:', utterances);
+
+    const handleSpeak = () => {
+      utterances.forEach((utterance) => {
+        const speech = new SpeechSynthesisUtterance(utterance);
+        speech.voice = selectedVoice;
+        speechSynthesis.speak(speech);
+      });
+    };
+
+    handleSpeak();
   };
 
   if (loading) return <Loading />;

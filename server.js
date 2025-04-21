@@ -21,7 +21,7 @@ import logger from './utils/logger.js';
 
 const app = express();
 const server = createServer(app);
-const ioServer = setupSocketIo(server);
+const ioServer = await setupSocketIo(server);
 
 app.use(json());
 app.use(cors());
@@ -37,5 +37,5 @@ app.use(notFound);
 app.use(errorHandler);
 
 server.listen(process.env.PORT, () => {
-  logger.info(`[SERVER] Server is running on {process.env.PORT}`);
+  logger.info(`[SERVER] Server is running on ${process.env.PORT}`);
 });

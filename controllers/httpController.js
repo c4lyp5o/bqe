@@ -1,38 +1,48 @@
-import cache from '../db/cache.js';
+import redis from '../db/redis.js';
 import nanoid from '../utils/nanoidGen.js';
 
 const healthCheck = (req, res) => {
-  res.status(200).json({ message: 'API is running' });
+  res.status(200).json({ msg: 'ok' });
 };
 
-const showCache = (req, res) => {
-  res.status(200).json(cache.dump());
+const showCache = async (req, res) => {
+  const keys = await redis.keys('*');
+  const cache = {};
+
+  for (const key of keys) {
+    const value = await redis.get(key);
+    cache[key] = JSON.parse(value);
+  }
+
+  res.status(200).json(cache);
 };
 
-const flushCache = (req, res) => {
-  cache.clear();
-  res.status(200).json({ message: 'Cache flushed' });
+const flushCache = async (req, res) => {
+  await redis.flushAll();
+  res.status(200).json({ msg: 'Cache flushed' });
 };
 
 const getNanoid = (req, res) => {
   res.status(200).json({ number: nanoid() });
 };
 
-const getSingleUseFacilityId = (req, res) => {
-  // console.log('express body: ', req.body);
-
+const getSingleUseFacilityId = async (req, res) => {
   const { facilityId, facilityName, facilityRoom } = req.body;
 
   if (!facilityId) {
-    return res.status(400).json({ message: 'Facility ID is required' });
+    return res.status(400).json({ msg: 'Bad Request' });
   }
 
   const singleUseFacilityId = nanoid();
-  cache.set(singleUseFacilityId, {
-    facilityId,
-    facilityName,
-    facilityRoom,
-  });
+
+  await redis.set(
+    singleUseFacilityId,
+    JSON.stringify({
+      facilityId,
+      facilityName,
+      facilityRoom,
+    })
+  );
 
   res.status(200).json({ singleUseFacilityId });
 };
@@ -42,33 +52,26 @@ const triggerOpenQueueScreen = async (req, res, ioServer) => {
 
   const singleUseFacilityIdAndTempId = multi.split('-');
   if (singleUseFacilityIdAndTempId.length !== 2) {
-    res.status(404).json({ message: 'Invalid multiId' });
+    res.status(400).json({ msg: 'Bad Request' });
     return;
   }
 
   const tempId = singleUseFacilityIdAndTempId[0];
   const singleUseFacilityId = singleUseFacilityIdAndTempId[1];
 
-  const facilityId = cache.get(singleUseFacilityId);
+  const facilityId = JSON.parse(await redis.get(singleUseFacilityId));
   if (!facilityId) {
-    res.status(404).json({ message: 'Invalid facilityId' });
+    res.status(404).json({ msg: 'Not Found' });
     return;
   }
 
-  const sockets = await ioServer.fetchSockets();
+  ioServer.to(tempId).emit('message', {
+    type: 'open-queue-screen',
+    tempId,
+    singleUseFacilityId,
+  });
 
-  for (const socket of sockets) {
-    if (socket.tempId === tempId) {
-      socket.send({
-        type: 'open-queue-screen',
-        tempId,
-        uuid: socket.id,
-        singleUseFacilityId,
-      });
-    }
-  }
-
-  res.status(200).json({ message: 'Triggered open-queue-screen' });
+  res.status(200).json({ msg: 'ok' });
 };
 
 const killswitch = (req, res, ioServer) => {
@@ -78,7 +81,7 @@ const killswitch = (req, res, ioServer) => {
 
   ioServer.emit('message', messageObject);
 
-  res.status(200).json({ message: 'Killswitch activated' });
+  res.status(200).json({ msg: 'ok' });
 };
 
 export {

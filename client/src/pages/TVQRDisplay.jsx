@@ -24,16 +24,20 @@ export default function TvQRDisplayPage() {
     const initializeSocket = async () => {
       const { data } = await axios.get('/api/v1/getnanoid');
       const tempId = data.number;
-      // console.log('tempId: ', data);
+      console.log('tempId: ', data);
 
-      socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
+      const wsUrl = `${
+        window.location.host.includes('localhost') ? 'ws://' : 'wss://'
+      }${window.location.host}`;
+
+      socket.current = io(wsUrl, {
         autoConnect: true,
       });
 
       socket.current.on('connect', () => {
         // console.log('Connected to WebSocket server as open user');
         socket.current.send({
-          type: 'identifyopenpublic',
+          type: 'identifytvqrdisplay',
           tempId: tempId,
         });
         setLoading(false);

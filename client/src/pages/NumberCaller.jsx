@@ -37,13 +37,20 @@ export default function NumberCallerPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
+    const wsUrl = `${
+      window.location.host.includes('localhost') ? 'ws://' : 'wss://'
+    }${window.location.host}`;
+
+    socket.current = io(wsUrl, {
       autoConnect: true,
     });
 
     socket.current.on('connect', () => {
       setAliveConn(true);
-      socket.current.send({ type: 'identifyadmin', singleUseFacilityId });
+      socket.current.send({
+        type: 'identifynumbercaller',
+        singleUseFacilityId,
+      });
       startPing();
     });
 
@@ -65,7 +72,7 @@ export default function NumberCallerPage() {
           setUuid(message.uuid);
           setLoading(false);
           break;
-        case 'pong-admin':
+        case 'pong-numbercaller':
           setPongs((pongs) => pongs + 1);
           break;
         default:
@@ -99,7 +106,7 @@ export default function NumberCallerPage() {
     setAllNumber(currAllNumber);
     setNumber('');
     socket.current.send({
-      type: 'admin',
+      type: 'numbercaller',
       singleUseFacilityId,
       facilityId,
       number: parseInt(number),
@@ -110,13 +117,13 @@ export default function NumberCallerPage() {
   const startPing = () => {
     clearInterval(pingInterval.current);
     pingInterval.current = setInterval(() => {
-      socket.current.send({ type: 'ping-admin', singleUseFacilityId });
+      socket.current.send({ type: 'ping-numbercaller', singleUseFacilityId });
     }, 30000);
   };
 
   const logOut = () => {
     clearInterval(pingInterval.current);
-    socket.current.send({ type: 'logout-admin', singleUseFacilityId });
+    socket.current.send({ type: 'logout-numbercaller', singleUseFacilityId });
     socket.current.disconnect();
     navigate('/');
   };

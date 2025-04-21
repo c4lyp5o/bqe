@@ -39,14 +39,18 @@ export default function TvNumberDisplayPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
+    const wsUrl = `${
+      window.location.host.includes('localhost') ? 'ws://' : 'wss://'
+    }${window.location.host}`;
+
+    socket.current = io(wsUrl, {
       autoConnect: true,
     });
 
     socket.current.on('connect', () => {
       setAliveConn(true);
       socket.current.send({
-        type: 'identifyclient',
+        type: 'identifytvnumberdisplay',
         singleUseFacilityId: singleUseFacilityId,
       });
       startPing();
@@ -69,7 +73,7 @@ export default function TvNumberDisplayPage() {
           setUuid(message.uuid);
           setLoading(false);
           break;
-        case 'admin':
+        case 'numbercaller':
           setMessage(message.numbers);
           playSound(() => {
             announceNumber(
@@ -78,7 +82,7 @@ export default function TvNumberDisplayPage() {
             );
           });
           break;
-        case 'pong-client':
+        case 'pong-tvnumberdisplay':
           setPongs((pongs) => pongs + 1);
           break;
         default:
@@ -106,7 +110,7 @@ export default function TvNumberDisplayPage() {
   const startPing = () => {
     pingInterval.current = setInterval(() => {
       socket.current.send({
-        type: 'ping-client',
+        type: 'ping-tvnumberdisplay',
         singleUseFacilityId,
       });
     }, 30000);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 import { Scanner, useDevices } from '@yudiel/react-qr-scanner';
 
 export default function QrScanner({ singleUseFacilityId }) {
@@ -12,16 +13,11 @@ export default function QrScanner({ singleUseFacilityId }) {
     if (result) {
       try {
         const tempId = result[0].rawValue.split('temp-')[1];
-        const qrCode = `/api/v1/getTrigger/${tempId}-${singleUseFacilityId}`;
-        // console.log(`tempId, qrCode: ${tempId} ${qrCode}`);
-        const response = await fetch(qrCode);
-        if (!response.ok) {
-          setCameraOn(false);
-          toast.error('Invalid QR code');
-          throw new Error('Network response was not ok');
-        }
+        const qrCode = `/api/v1/trigger/${tempId}-${singleUseFacilityId}`;
+        await axios.get(qrCode);
         // console.log('QR code processed successfully');
       } catch (error) {
+        toast.error('Invalid QR code');
         // console.error('Error processing QR code:', error);
       } finally {
         setCameraOn(false);
@@ -54,9 +50,9 @@ export default function QrScanner({ singleUseFacilityId }) {
         constraints={{
           deviceId: deviceId,
         }}
-        onError={(error) => {
-          console.log(`onError: ${error}'`);
-        }}
+        // onError={(error) => {
+        //   console.log(`onError: ${error}'`);
+        // }}
         scanDelay={2000}
         paused={pause}
         onScan={handleScan}

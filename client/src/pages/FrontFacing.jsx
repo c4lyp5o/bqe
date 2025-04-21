@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams } from 'react-router';
 import { io } from 'socket.io-client';
 
-import Loading from '../../../components/loading';
-import Invalid from '../../../components/invalid';
+import Loading from '../components/Loading';
+import Invalid from '../components/Invalid';
 
 export default function FrontFacing() {
   const { singleUseFacilityId } = useParams();
@@ -29,7 +29,7 @@ export default function FrontFacing() {
   const refreshInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
       autoConnect: true,
     });
 
@@ -75,7 +75,7 @@ export default function FrontFacing() {
       }
       clearInterval(refreshInterval.current);
     };
-  }, []);
+  }, [singleUseFacilityId]);
 
   if (loading) return <Loading />;
 
@@ -86,14 +86,14 @@ export default function FrontFacing() {
       <h1 className='text-4xl font-bold mb-8'>Queue Management System</h1>
       <div className='w-full max-w-md text-center'>
         {/* <p className='mb-2 text-lg'>
-          Facility ID: <span className='font-semibold'>{facilityId}</span>
-        </p> */}
+                    Facility ID: <span className='font-semibold'>{facilityId}</span>
+                </p> */}
         <p className='mb-2 text-lg'>
           <span className='font-semibold'>{facilityName}</span>
         </p>
         {/* <p className='mb-2 text-lg'>
-          UUID: <span className='font-semibold'>{uuid}</span>
-        </p> */}
+                    UUID: <span className='font-semibold'>{uuid}</span>
+                </p> */}
         <p className='mb-4 text-2xl'>
           Current Number: <span className='font-bold'>{number[0]?.number}</span>
         </p>

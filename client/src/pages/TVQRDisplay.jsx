@@ -1,15 +1,14 @@
-'use client';
-
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 import QRCode from 'qrcode';
 import { io } from 'socket.io-client';
 
-import Loading from '../../components/loading';
-import Invalid from '../../components/invalid';
+import Loading from '../components/Loading';
+import Invalid from '../components/Invalid';
+import axios from 'axios';
 
 export default function TvQRDisplayPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   // page status
   const [loading, setLoading] = useState(true);
@@ -22,16 +21,12 @@ export default function TvQRDisplayPage() {
   const socket = useRef(null);
 
   useEffect(() => {
-    const qrActivation = async () => {
-      const response = await fetch('/api/v1/getNumber');
-      return response.json();
-    };
-
     const initializeSocket = async () => {
-      const tempId = await qrActivation();
-      // console.log('tempId: ', tempId);
+      const { data } = await axios.get('/api/v1/getnanoid');
+      const tempId = data.number;
+      // console.log('tempId: ', data);
 
-      socket.current = io(process.env.NEXT_PUBLIC_WS_DOMAIN, {
+      socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
         autoConnect: true,
       });
 
@@ -39,7 +34,7 @@ export default function TvQRDisplayPage() {
         // console.log('Connected to WebSocket server as open user');
         socket.current.send({
           type: 'identifyopenpublic',
-          tempId: tempId.number,
+          tempId: tempId,
         });
         setLoading(false);
       });
@@ -56,8 +51,8 @@ export default function TvQRDisplayPage() {
           case 'open-queue-screen':
             // console.log('Received open-queue-screen message');
             setLoading(true);
-            router.push(
-              `/user/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
+            navigate(
+              `/tv/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
             );
             break;
         }
@@ -65,7 +60,7 @@ export default function TvQRDisplayPage() {
 
       socket.current.connect();
 
-      const url = await QRCode.toDataURL(`temp-${tempId.number}`);
+      const url = await QRCode.toDataURL(`temp-${tempId}`);
       setQrCode(url);
     };
 
@@ -74,7 +69,7 @@ export default function TvQRDisplayPage() {
     return () => {
       if (socket.current) socket.current.disconnect();
     };
-  }, []);
+  }, [navigate]);
 
   if (loading) return <Loading />;
 

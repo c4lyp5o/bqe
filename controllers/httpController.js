@@ -2,7 +2,7 @@ import redis from '../db/redis.js';
 import nanoid from '../utils/nanoidGen.js';
 
 const healthCheck = (req, res) => {
-  res.status(200).json({ message: 'API is running' });
+  res.status(200).json({ msg: 'ok' });
 };
 
 const showCache = async (req, res) => {
@@ -19,7 +19,7 @@ const showCache = async (req, res) => {
 
 const flushCache = async (req, res) => {
   await redis.flushAll();
-  res.status(200).json({ message: 'Cache flushed' });
+  res.status(200).json({ msg: 'Cache flushed' });
 };
 
 const getNanoid = (req, res) => {
@@ -30,12 +30,11 @@ const getSingleUseFacilityId = async (req, res) => {
   const { facilityId, facilityName, facilityRoom } = req.body;
 
   if (!facilityId) {
-    return res.status(400).json({ message: 'Facility ID is required' });
+    return res.status(400).json({ msg: 'Bad Request' });
   }
 
   const singleUseFacilityId = nanoid();
 
-  // Serialize the object before storing it in Redis
   await redis.set(
     singleUseFacilityId,
     JSON.stringify({
@@ -53,7 +52,7 @@ const triggerOpenQueueScreen = async (req, res, ioServer) => {
 
   const singleUseFacilityIdAndTempId = multi.split('-');
   if (singleUseFacilityIdAndTempId.length !== 2) {
-    res.status(404).json({ message: 'Invalid multiId' });
+    res.status(400).json({ msg: 'Bad Request' });
     return;
   }
 
@@ -62,24 +61,17 @@ const triggerOpenQueueScreen = async (req, res, ioServer) => {
 
   const facilityId = JSON.parse(await redis.get(singleUseFacilityId));
   if (!facilityId) {
-    res.status(404).json({ message: 'Invalid facilityId' });
+    res.status(404).json({ msg: 'Not Found' });
     return;
   }
 
-  const sockets = await ioServer.fetchSockets();
+  ioServer.to(tempId).emit('message', {
+    type: 'open-queue-screen',
+    tempId,
+    singleUseFacilityId,
+  });
 
-  for (const socket of sockets) {
-    if (socket.tempId === tempId) {
-      socket.send({
-        type: 'open-queue-screen',
-        tempId,
-        uuid: socket.id,
-        singleUseFacilityId,
-      });
-    }
-  }
-
-  res.status(200).json({ message: 'Triggered open-queue-screen' });
+  res.status(200).json({ msg: 'ok' });
 };
 
 const killswitch = (req, res, ioServer) => {
@@ -89,7 +81,7 @@ const killswitch = (req, res, ioServer) => {
 
   ioServer.emit('message', messageObject);
 
-  res.status(200).json({ message: 'Killswitch activated' });
+  res.status(200).json({ msg: 'ok' });
 };
 
 export {

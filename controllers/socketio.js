@@ -9,13 +9,13 @@ import MESSAGE_TYPES from '../utils/messageTypes.js';
 
 dotenv.config();
 
-const handleIdentifyAdmin = async (socket, message) => {
+const handleIdentifyNumberCaller = async (socket, message) => {
   logger.info(
-    `[IDADMIN-INIT] Admin identified with singleUseFacilityId: ${message.singleUseFacilityId}`
+    `[ID-NC-INIT] NC identified with singleUseFacilityId: ${message.singleUseFacilityId}`
   );
 
   socket.singleUseFacilityId = message.singleUseFacilityId;
-  socket.type = MESSAGE_TYPES.IDENTIFY_ADMIN;
+  socket.type = MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER;
 
   const isConnected = JSON.parse(
     await redis.get(`${message.singleUseFacilityId}-connected`)
@@ -28,7 +28,7 @@ const handleIdentifyAdmin = async (socket, message) => {
 
     socket.send(messageObject);
     logger.warn(
-      `[IDADMIN-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId} since already connected`
+      `[ID-NC-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId} since already connected`
     );
     return;
   }
@@ -56,7 +56,7 @@ const handleIdentifyAdmin = async (socket, message) => {
 
     socket.send(messageObject);
     logger.info(
-      `[IDADMIN-ACCEPT] Accepted ${socket.id} for ${socket.singleUseFacilityId}`
+      `[ID-NC-ACCEPT] Accepted ${socket.id} for ${socket.singleUseFacilityId}`
     );
   } else {
     const messageObject = {
@@ -66,12 +66,12 @@ const handleIdentifyAdmin = async (socket, message) => {
 
     socket.send(messageObject);
     logger.warn(
-      `[IDADMIN-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId}`
+      `[ID-NC-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId}`
     );
   }
 };
 
-const handleAdminMessage = async (io, message) => {
+const handleNumberCallerMessage = async (io, message) => {
   const currentNumbers =
     JSON.parse(await redis.get(`${message.facilityId}-q`)) || [];
   const updatedNumbers = [
@@ -81,49 +81,37 @@ const handleAdminMessage = async (io, message) => {
   await redis.set(`${message.facilityId}-q`, JSON.stringify(updatedNumbers));
 
   const messageObject = {
-    type: MESSAGE_TYPES.ADMIN,
+    type: MESSAGE_TYPES.NUMBER_CALLER,
     facilityId: message.facilityId,
     numbers: updatedNumbers,
   };
 
-  // logger.info('Sending admin message:', messageObject);
-
-  const sockets = await io.fetchSockets();
-
-  for (const socket of sockets) {
-    if (
-      socket.type === MESSAGE_TYPES.IDENTIFY_CLIENT &&
-      socket.facilityId === message.facilityId
-    ) {
-      socket.send(messageObject);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-  }
+  io.to(message.facilityId).emit('message', messageObject);
 };
 
-const handleIdentifyOpenPublic = (socket, message) => {
+const handleIdentifyTVQRDisplay = (socket, message) => {
   logger.info(
-    `[IDOPENPUBLIC-INIT] Open Public ${socket.id} identified with tempId: ${message.tempId}`
+    `[ID-TVQR-INIT] TVQR Display ${socket.id} identified with tempId: ${message.tempId}`
   );
 
-  socket.type = MESSAGE_TYPES.IDENTIFY_OPEN_PUBLIC;
+  socket.type = MESSAGE_TYPES.IDENTIFY_TVQR_DISPLAY;
   socket.tempId = message.tempId;
 };
 
-const handleAdminLogout = async (socket, message) => {
+const handleNumberCallerLogout = async (socket, message) => {
   logger.info(
-    `[LOGOUTADMIN] Admin ${socket.id}/${socket.singleUseFacilityId} logged out`
+    `[LOGOUT-NC] Number caller ${socket.id}/${socket.singleUseFacilityId} logged out`
   );
   await redis.del(message.singleUseFacilityId);
 };
 
-const handleIdentifyClient = async (socket, message) => {
+const handleIdentifyTVNumberDisplay = async (socket, message) => {
   logger.info(
-    `[IDCLIENT-INIT] Client ${socket.id} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
+    `[ID-TVND-INIT] TV Number Display ${socket.id} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
   );
 
   socket.singleUseFacilityId = message.singleUseFacilityId;
-  socket.type = MESSAGE_TYPES.IDENTIFY_CLIENT;
+  socket.type = MESSAGE_TYPES.IDENTIFY_TVNUMBER_DISPLAY;
 
   const facilityData = JSON.parse(await redis.get(message.singleUseFacilityId));
   // logger.info('socket facilityData: ', facilityData);
@@ -131,6 +119,8 @@ const handleIdentifyClient = async (socket, message) => {
   if (facilityData) {
     socket.facilityId = facilityData.facilityId;
     socket.facilityName = facilityData.facilityName;
+
+    socket.join(facilityData.facilityId);
 
     const messageObject = {
       type: MESSAGE_TYPES.SET_FACILITY_ID,
@@ -143,7 +133,7 @@ const handleIdentifyClient = async (socket, message) => {
 
     socket.send(messageObject);
     logger.info(
-      `[IDCLIENT-ACCEPT] Accepted ${socket.id} for ${socket.singleUseFacilityId}`
+      `[ID-TVND-ACCEPT] Accepted ${socket.id} for ${socket.singleUseFacilityId}`
     );
   } else {
     const messageObject = {
@@ -153,14 +143,14 @@ const handleIdentifyClient = async (socket, message) => {
 
     socket.send(messageObject);
     logger.warn(
-      `[IDCLIENT-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId}`
+      `[ID-TVND-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId}`
     );
   }
 };
 
 const handleIdentifyPublic = async (socket, message) => {
   logger.info(
-    `[IDPUBLIC-INIT] Public ${socket.id} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
+    `[ID-PUBLIC-INIT] Public ${socket.id} identified with singleUseFacilityId: ${message.singleUseFacilityId}`
   );
 
   socket.singleUseFacilityId = message.singleUseFacilityId;
@@ -187,7 +177,7 @@ const handleIdentifyPublic = async (socket, message) => {
 
     socket.send(messageObject);
     logger.info(
-      `[IDPUBLIC-ACCEPT] Accepted ${socket.id} for ${socket.singleUseFacilityId}`
+      `[ID-PUBLIC-ACCEPT] Accepted ${socket.id} for ${socket.singleUseFacilityId}`
     );
   } else {
     const messageObject = {
@@ -197,7 +187,7 @@ const handleIdentifyPublic = async (socket, message) => {
 
     socket.send(messageObject);
     logger.warn(
-      `[IDPUBLIC-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId}`
+      `[ID-PUBLIC-REJECT] Rejected ${socket.id} for ${socket.singleUseFacilityId}`
     );
   }
 };
@@ -205,38 +195,27 @@ const handleIdentifyPublic = async (socket, message) => {
 const handlePingMessage = async (io, message) => {
   const messageObject = {
     type:
-      message.type === MESSAGE_TYPES.PING_ADMIN
-        ? MESSAGE_TYPES.PONG_ADMIN
-        : MESSAGE_TYPES.PONG_CLIENT,
+      message.type === MESSAGE_TYPES.PING_NUMBER_CALLER
+        ? MESSAGE_TYPES.PONG_NUMBER_CALLER
+        : MESSAGE_TYPES.PONG_TVNUMBER_DISPLAY,
     singleUseFacilityId: message.singleUseFacilityId,
   };
 
-  const sockets = await io.fetchSockets();
-
-  for (const socket of sockets) {
-    if (socket.singleUseFacilityId === message.singleUseFacilityId) {
-      socket.send(messageObject);
-    }
-  }
+  io.to(message.singleUseFacilityId).emit('message', messageObject);
 };
 
 export default async function setupSocketIo(server) {
   const redisUrl = `redis://${process.env.REDIS_USER || ''}:${
     process.env.REDIS_PASSWORD
   }@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`;
-  logger.info(`[REDIS] Redis URL: ${redisUrl}`);
 
-  const pubClient = createClient({
-    url: redisUrl,
-  });
+  const pubClient = createClient({ url: redisUrl });
   const subClient = pubClient.duplicate();
 
-  // Add error handlers for pubClient
   pubClient.on('error', (err) => {
     logger.error(`[REDIS] Redis pubClient error: ${err.message}`);
   });
 
-  // Add error handlers for subClient
   subClient.on('error', (err) => {
     logger.error(`[REDIS] Redis subClient error: ${err.message}`);
   });
@@ -261,26 +240,29 @@ export default async function setupSocketIo(server) {
 
     socket.on('message', (message) => {
       switch (message.type) {
-        case MESSAGE_TYPES.IDENTIFY_ADMIN:
-          handleIdentifyAdmin(socket, message);
+        case MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER:
+          handleIdentifyNumberCaller(socket, message);
+          socket.join(message.singleUseFacilityId);
           break;
         case MESSAGE_TYPES.ADMIN:
-          handleAdminMessage(io, message);
+          handleNumberCallerMessage(io, message);
           break;
-        case MESSAGE_TYPES.LOGOUT_ADMIN:
-          handleAdminLogout(socket, message);
+        case MESSAGE_TYPES.LOGOUT_NUMBER_CALLER:
+          handleNumberCallerLogout(socket, message);
           break;
-        case MESSAGE_TYPES.IDENTIFY_OPEN_PUBLIC:
-          handleIdentifyOpenPublic(socket, message);
+        case MESSAGE_TYPES.IDENTIFY_TVQR_DISPLAY:
+          socket.join(message.tempId);
+          handleIdentifyTVQRDisplay(socket, message);
           break;
-        case MESSAGE_TYPES.IDENTIFY_CLIENT:
-          handleIdentifyClient(socket, message);
+        case MESSAGE_TYPES.IDENTIFY_TVNUMBER_DISPLAY:
+          handleIdentifyTVNumberDisplay(socket, message);
+          socket.join(message.singleUseFacilityId);
           break;
         case MESSAGE_TYPES.IDENTIFY_PUBLIC:
           handleIdentifyPublic(socket, message);
           break;
-        case MESSAGE_TYPES.PING_ADMIN:
-        case MESSAGE_TYPES.PING_CLIENT:
+        case MESSAGE_TYPES.PING_NUMBER_CALLER:
+        case MESSAGE_TYPES.PING_TVNUMBER_DISPLAY:
           handlePingMessage(io, message);
           break;
         default:
@@ -295,7 +277,7 @@ export default async function setupSocketIo(server) {
       );
 
       switch (socket.type) {
-        case MESSAGE_TYPES.IDENTIFY_ADMIN:
+        case MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER:
           await redis.del(`${socket.singleUseFacilityId}-connected`);
           break;
         default:

@@ -3,9 +3,12 @@ import { toast } from 'react-toastify';
 import { io } from 'socket.io-client';
 
 export default function NumberCallerPage() {
-  const wsUrl = `${
-    window.location.host.includes('localhost') ? 'ws://' : 'wss://'
-  }${window.location.host}`;
+  const wsUrl =
+    import.meta.env.VITE_PUBLIC_BUILD === 'development'
+      ? 'ws://localhost:5000'
+      : `${window.location.host.includes('localhost') ? 'ws://' : 'wss://'}${
+          window.location.host
+        }`;
 
   const socket = io(wsUrl, { autoConnect: false });
 

@@ -39,13 +39,14 @@ export default function TvNumberDisplayPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    const wsUrl = `${
-      window.location.host.includes('localhost') ? 'ws://' : 'wss://'
-    }${window.location.host}`;
+    const wsUrl =
+      import.meta.env.VITE_PUBLIC_BUILD === 'development'
+        ? 'ws://localhost:5000'
+        : `${window.location.host.includes('localhost') ? 'ws://' : 'wss://'}${
+            window.location.host
+          }`;
 
-    socket.current = io(wsUrl, {
-      autoConnect: true,
-    });
+    socket.current = io(wsUrl, { autoConnect: true });
 
     socket.current.on('connect', () => {
       setAliveConn(true);

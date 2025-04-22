@@ -2,12 +2,34 @@ import { createClient } from 'redis';
 import { createAdapter } from '@socket.io/redis-adapter';
 import dotenv from 'dotenv';
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 
 import redis from '../db/redis.js';
 import logger from '../utils/logger.js';
 import MESSAGE_TYPES from '../utils/messageTypes.js';
 
 dotenv.config();
+
+const validateToken = async (message, next) => {
+  const { token } = message;
+
+  if (!token) {
+    throw new Error('Unauthorized');
+  }
+
+  const verifiedToken = await redis.get(token);
+  if (verifiedToken) next();
+
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+    await redis.set(token, JSON.stringify(true), {
+      EX: 8 * 60 * 60,
+    });
+    next();
+  } catch (error) {
+    throw new Error('Unauthorized');
+  }
+};
 
 const handleIdentifyNumberCaller = async (socket, message) => {
   logger.info(
@@ -42,7 +64,8 @@ const handleIdentifyNumberCaller = async (socket, message) => {
 
     await redis.set(
       `${message.singleUseFacilityId}-connected`,
-      JSON.stringify(true)
+      JSON.stringify(true),
+      { EX: 8 * 60 * 60 }
     );
 
     const messageObject = {
@@ -78,7 +101,9 @@ const handleNumberCallerMessage = async (io, message) => {
     { number: message.number, facilityRoom: message.facilityRoom },
   ].concat(currentNumbers);
 
-  await redis.set(`${message.facilityId}-q`, JSON.stringify(updatedNumbers));
+  await redis.set(`${message.facilityId}-q`, JSON.stringify(updatedNumbers), {
+    EX: 8 * 60 * 60,
+  });
 
   const messageObject = {
     type: MESSAGE_TYPES.NUMBER_CALLER,
@@ -192,7 +217,7 @@ const handleIdentifyPublic = async (socket, message) => {
   }
 };
 
-const handlePingMessage = async (io, message) => {
+const handlePingMessage = (io, message) => {
   const messageObject = {
     type:
       message.type === MESSAGE_TYPES.PING_NUMBER_CALLER
@@ -241,11 +266,15 @@ export default async function setupSocketIo(server) {
     socket.on('message', (message) => {
       switch (message.type) {
         case MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER:
-          handleIdentifyNumberCaller(socket, message);
+          validateToken(message, () => {
+            handleIdentifyNumberCaller(socket, message);
+          });
           socket.join(message.singleUseFacilityId);
           break;
-        case MESSAGE_TYPES.ADMIN:
-          handleNumberCallerMessage(io, message);
+        case MESSAGE_TYPES.NUMBER_CALLER:
+          validateToken(message, () => {
+            handleNumberCallerMessage(socket, message);
+          });
           break;
         case MESSAGE_TYPES.LOGOUT_NUMBER_CALLER:
           handleNumberCallerLogout(socket, message);

@@ -132,8 +132,6 @@ export default function TvNumberDisplayPage() {
       facilityRoom.split(' ')[1],
     ];
 
-    // console.log('Utterances:', utterances);
-
     const handleSpeak = () => {
       utterances.forEach((utterance) => {
         const speech = new SpeechSynthesisUtterance(utterance);
@@ -142,7 +140,9 @@ export default function TvNumberDisplayPage() {
       });
     };
 
-    handleSpeak();
+    if (!speechSynthesis.speaking) {
+      handleSpeak();
+    }
   };
 
   if (loading) return <Loading />;

@@ -37,18 +37,20 @@ export default function NumberCallerPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    const wsUrl = `${
-      window.location.host.includes('localhost') ? 'ws://' : 'wss://'
-    }${window.location.host}`;
+    const wsUrl =
+      import.meta.env.VITE_PUBLIC_BUILD === 'development'
+        ? 'ws://localhost:5000'
+        : `${window.location.host.includes('localhost') ? 'ws://' : 'wss://'}${
+            window.location.host
+          }`;
 
-    socket.current = io(wsUrl, {
-      autoConnect: true,
-    });
+    socket.current = io(wsUrl, { autoConnect: true });
 
     socket.current.on('connect', () => {
       setAliveConn(true);
       socket.current.send({
         type: 'identifynumbercaller',
+        token: localStorage.getItem('token'),
         singleUseFacilityId,
       });
       startPing();
@@ -107,6 +109,7 @@ export default function NumberCallerPage() {
     setNumber('');
     socket.current.send({
       type: 'numbercaller',
+      token: localStorage.getItem('token'),
       singleUseFacilityId,
       facilityId,
       number: parseInt(number),
@@ -125,6 +128,7 @@ export default function NumberCallerPage() {
     clearInterval(pingInterval.current);
     socket.current.send({ type: 'logout-numbercaller', singleUseFacilityId });
     socket.current.disconnect();
+    localStorage.removeItem('token');
     navigate('/');
   };
 

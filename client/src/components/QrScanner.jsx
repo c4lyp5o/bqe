@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { Scanner, useDevices } from '@yudiel/react-qr-scanner';
 
-export default function QrScanner({ singleUseFacilityId }) {
+export default function QrScanner({ singleUseFacilityId, setCameraOn }) {
   const allDevices = useDevices();
 
   const [pause, setPause] = useState(false);

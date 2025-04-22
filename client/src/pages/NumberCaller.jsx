@@ -186,7 +186,12 @@ export default function NumberCallerPage() {
           {cameraOn ? 'Close Camera' : 'Open Camera'}
         </button>
         <div className='mt-3'>
-          {cameraOn && <QrScanner singleUseFacilityId={singleUseFacilityId} />}
+          {cameraOn && (
+            <QrScanner
+              singleUseFacilityId={singleUseFacilityId}
+              setCameraOn={setCameraOn}
+            />
+          )}
         </div>
       </div>
     </div>

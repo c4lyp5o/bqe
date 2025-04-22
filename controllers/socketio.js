@@ -255,9 +255,7 @@ export default async function setupSocketIo(server) {
 
   const io = new Server(server, {
     adapter: createAdapter(pubClient, subClient),
-    cors: {
-      origin: '*',
-    },
+    cors: { origin: '*' },
   });
 
   io.on('connection', (socket) => {

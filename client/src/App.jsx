@@ -9,6 +9,7 @@ const TvNumberDisplayPage = React.lazy(() => import('./pages/TVNumberDisplay'));
 const FrontFacingPage = React.lazy(() => import('./pages/FrontFacing'));
 const TestSocketIo = React.lazy(() => import('./pages/TestSocketIo'));
 
+const ProtectedPage = React.lazy(() => import('./pages/ProtectedPage'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -32,8 +33,13 @@ function App() {
 
           <Route
             path='/numbercaller/:singleUseFacilityId'
-            element={<NumberCallerPage />}
+            element={
+              <ProtectedPage>
+                <NumberCallerPage />
+              </ProtectedPage>
+            }
           />
+
           <Route path='/tv' element={<TvQRDisplayPage />} />
           <Route
             path='/tv/:multiId1/:multiId2/:multiId3'

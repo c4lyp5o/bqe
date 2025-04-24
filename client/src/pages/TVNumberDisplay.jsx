@@ -39,13 +39,14 @@ export default function TvNumberDisplayPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    const wsUrl = `${
-      window.location.host.includes('localhost') ? 'ws://' : 'wss://'
-    }${window.location.host}`;
+    const wsUrl =
+      import.meta.env.VITE_PUBLIC_BUILD === 'development'
+        ? 'ws://localhost:5000'
+        : `${window.location.host.includes('localhost') ? 'ws://' : 'wss://'}${
+            window.location.host
+          }`;
 
-    socket.current = io(wsUrl, {
-      autoConnect: true,
-    });
+    socket.current = io(wsUrl, { autoConnect: true });
 
     socket.current.on('connect', () => {
       setAliveConn(true);
@@ -131,8 +132,6 @@ export default function TvNumberDisplayPage() {
       facilityRoom.split(' ')[1],
     ];
 
-    // console.log('Utterances:', utterances);
-
     const handleSpeak = () => {
       utterances.forEach((utterance) => {
         const speech = new SpeechSynthesisUtterance(utterance);
@@ -141,7 +140,9 @@ export default function TvNumberDisplayPage() {
       });
     };
 
-    handleSpeak();
+    if (!speechSynthesis.speaking) {
+      handleSpeak();
+    }
   };
 
   if (loading) return <Loading />;

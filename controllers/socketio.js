@@ -18,7 +18,10 @@ const validateToken = async (message, next) => {
   }
 
   const verifiedToken = await redis.get(token);
-  if (verifiedToken) next();
+  if (verifiedToken) {
+    next();
+    return;
+  }
 
   try {
     jwt.verify(token, process.env.JWT_SECRET);

@@ -19,7 +19,7 @@ const showCache = async (req, res) => {
 
 const flushCache = async (req, res) => {
   await redis.flushAll();
-  res.status(200).json({ msg: 'Cache flushed' });
+  res.status(200).json({ message: 'Cache flushed' });
 };
 
 const getNanoid = (req, res) => {

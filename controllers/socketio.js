@@ -40,9 +40,8 @@ const handleIdentifyNumberCaller = async (socket, message) => {
   socket.singleUseFacilityId = message.singleUseFacilityId;
   socket.type = MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER;
 
-  const isConnected = JSON.parse(
-    await redis.get(`${message.singleUseFacilityId}-connected`)
-  );
+  const rawIsConnected = await redis.get(`${message.singleUseFacilityId}-connected`);
+  const isConnected = rawIsConnected ? JSON.parse(rawIsConnected) : false;
   if (isConnected) {
     const messageObject = {
       type: MESSAGE_TYPES.ALREADY_CONNECTED,

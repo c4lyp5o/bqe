@@ -1,5 +1,5 @@
 # Stage 1: Build Stage (client build)
-FROM node:22-alpine AS builder
+FROM node:lts-alpine AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ RUN mkdir -p /app/public && mv ../public/* /app/public/
 WORKDIR /app
 
 # Stage 2: Production Stage
-FROM node:22-alpine
+FROM node:lts-alpine
 
 # Install curl for health check
 RUN apk update --no-cache && \

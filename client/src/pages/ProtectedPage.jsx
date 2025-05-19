@@ -1,36 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router';
-import axios from 'axios';
-
 import Loading from '../components/Loading';
+import useAuthValidation from '../hooks/useAuthValidation';
 
 const ProtectedPage = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const { isAuthenticated, loading } = useAuthValidation();
 
-  useEffect(() => {
-    const validateToken = async () => {
-      try {
-        await axios.get('/api/v1/validate-token', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        setIsAuthenticated(true);
-      } catch (error) {
-        setIsAuthenticated(false);
-      }
-    };
-
-    validateToken();
-  }, []);
-
-  if (isAuthenticated === null) {
-    return <Loading />;
+  if (loading) {
+    return (
+      <div className='flex items-center justify-center h-screen'>
+        <Loading />
+      </div>
+    );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to='/' replace />;
-  }
+  if (!isAuthenticated) return null;
 
   return <>{children}</>;
 };

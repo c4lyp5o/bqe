@@ -44,7 +44,10 @@ export default function NumberCallerPage() {
             window.location.host
           }`;
 
-    socket.current = io(wsUrl, { autoConnect: true });
+    socket.current = io(wsUrl, {
+      autoConnect: true,
+      transports: ['websocket'],
+    });
 
     socket.current.on('connect', () => {
       setAliveConn(true);

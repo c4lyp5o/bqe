@@ -36,7 +36,10 @@ export default function FrontFacing() {
             window.location.host
           }`;
 
-    socket.current = io(wsUrl, { autoConnect: true });
+    socket.current = io(wsUrl, {
+      autoConnect: true,
+      transports: ['websocket'],
+    });
 
     socket.current.on('connect', () => {
       // console.log('Connected to WebSocket server as public facing');

@@ -21,7 +21,7 @@ export default function useAuthValidation() {
       }
 
       try {
-        await axios.get('/api/v1/auth/validate-token', {
+        await axios.get('/api/v1/validate-token', {
           headers: {
             Authorization: `Bearer ${token}`,
           },

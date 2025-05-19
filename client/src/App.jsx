@@ -42,7 +42,7 @@ function App() {
 
           <Route path='/tv' element={<TvQRDisplayPage />} />
           <Route
-            path='/tv/:multiId1/:multiId2/:multiId3'
+            path='/tv/:multiId1/:multiId2'
             element={<TvNumberDisplayPage />}
           />
           <Route

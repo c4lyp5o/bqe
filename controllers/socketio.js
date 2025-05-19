@@ -13,9 +13,7 @@ dotenv.config();
 const validateToken = async (message, next) => {
   const { token } = message;
 
-  if (!token) {
-    throw new Error('Unauthorized');
-  }
+  if (!token) throw new Error('Unauthorized');
 
   const verifiedToken = await redis.get(token);
   if (verifiedToken) {
@@ -127,10 +125,13 @@ const handleIdentifyTVQRDisplay = (socket, message) => {
 };
 
 const handleNumberCallerLogout = async (socket, message) => {
+  const { token, singleUseFacilityId } = message;
+
   logger.info(
     `[LOGOUT-NC] Number caller ${socket.id}/${socket.singleUseFacilityId} logged out`
   );
-  await redis.del(message.singleUseFacilityId);
+  await redis.del(token);
+  await redis.del(singleUseFacilityId);
 };
 
 const handleIdentifyTVNumberDisplay = async (socket, message) => {
@@ -259,6 +260,7 @@ export default async function setupSocketIo(server) {
   const io = new Server(server, {
     adapter: createAdapter(pubClient, subClient),
     cors: { origin: '*' },
+    transports: ['websocket'],
   });
 
   io.on('connection', (socket) => {

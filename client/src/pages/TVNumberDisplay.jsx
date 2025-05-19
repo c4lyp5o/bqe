@@ -8,10 +8,10 @@ import Loading from '../components/Loading';
 import Invalid from '../components/Invalid';
 
 export default function TvNumberDisplayPage() {
-  const { multiId1, multiId2, multiId3 } = useParams();
+  const { multiId1, multiId2 } = useParams();
 
   const tempId = multiId1; // from open tv display
-  const singleUseFacilityId = multiId3; // from number caller
+  const singleUseFacilityId = multiId2; // from number caller
 
   const { selectedVoice } = GlobalVoiceContext();
 
@@ -46,7 +46,10 @@ export default function TvNumberDisplayPage() {
             window.location.host
           }`;
 
-    socket.current = io(wsUrl, { autoConnect: true });
+    socket.current = io(wsUrl, {
+      autoConnect: true,
+      transports: ['websocket'],
+    });
 
     socket.current.on('connect', () => {
       setAliveConn(true);

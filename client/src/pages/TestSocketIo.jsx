@@ -10,7 +10,7 @@ export default function NumberCallerPage() {
           window.location.host
         }`;
 
-  const socket = io(wsUrl, { autoConnect: false });
+  const socket = io(wsUrl, { autoConnect: false, transports: ['websocket'] });
 
   const [aliveConn, setAliveConn] = useState(false);
 

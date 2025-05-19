@@ -33,7 +33,10 @@ export default function TvQRDisplayPage() {
               window.location.host.includes('localhost') ? 'ws://' : 'wss://'
             }${window.location.host}`;
 
-      socket.current = io(wsUrl, { autoConnect: true });
+      socket.current = io(wsUrl, {
+        autoConnect: true,
+        transports: ['websocket'],
+      });
 
       socket.current.on('connect', () => {
         // console.log('Connected to WebSocket server as open user');
@@ -56,9 +59,7 @@ export default function TvQRDisplayPage() {
           case 'open-queue-screen':
             // console.log('Received open-queue-screen message');
             setLoading(true);
-            navigate(
-              `/tv/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
-            );
+            navigate(`/tv/${message.tempId}/${message.singleUseFacilityId}`);
             break;
         }
       });

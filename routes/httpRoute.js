@@ -18,6 +18,7 @@ const router = express.Router();
 export default function httpRoutes(ioServer) {
   // Public routes
   router.post('/login', loginUser);
+  router.get('/getnanoid', getNanoid);
 
   // Routes using API key
   router.get('/cache', apiKeyAuth, showCache);
@@ -35,7 +36,6 @@ export default function httpRoutes(ioServer) {
 
   // Routes using local auth
   router.get('/healthcheck', localAuth, healthCheck);
-  router.get('/getnanoid', localAuth, getNanoid);
 
   return router;
 }

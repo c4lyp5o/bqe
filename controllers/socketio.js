@@ -11,17 +11,14 @@ import MESSAGE_TYPES from '../utils/messageTypes.js';
 dotenv.config();
 
 const validateToken = async (message, next) => {
-  const { token } = message;
-
-  if (!token) throw new Error('Unauthorized');
-
-  const verifiedToken = await redis.get(token);
-  if (verifiedToken) {
-    next();
-    return;
-  }
-
   try {
+    const { token } = message;
+
+    if (!token) throw new Error('Unauthorized');
+
+    const verifiedToken = await redis.get(token);
+    if (verifiedToken) return next();
+
     jwt.verify(token, process.env.JWT_SECRET);
     await redis.set(token, JSON.stringify(true), {
       EX: 8 * 60 * 60,
@@ -40,7 +37,9 @@ const handleIdentifyNumberCaller = async (socket, message) => {
   socket.singleUseFacilityId = message.singleUseFacilityId;
   socket.type = MESSAGE_TYPES.IDENTIFY_NUMBER_CALLER;
 
-  const rawIsConnected = await redis.get(`${message.singleUseFacilityId}-connected`);
+  const rawIsConnected = await redis.get(
+    `${message.singleUseFacilityId}-connected`
+  );
   const isConnected = rawIsConnected ? JSON.parse(rawIsConnected) : false;
   if (isConnected) {
     const messageObject = {

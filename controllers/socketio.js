@@ -125,13 +125,13 @@ const handleIdentifyTVQRDisplay = (socket, message) => {
 };
 
 const handleNumberCallerLogout = async (socket, message) => {
-  const { token } = message;
+  const { token, singleUseFacilityId } = message;
 
   logger.info(
     `[LOGOUT-NC] Number caller ${socket.id}/${socket.singleUseFacilityId} logged out`
   );
   await redis.del(token);
-  await redis.del(message.singleUseFacilityId);
+  await redis.del(singleUseFacilityId);
 };
 
 const handleIdentifyTVNumberDisplay = async (socket, message) => {

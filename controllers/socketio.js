@@ -130,6 +130,7 @@ const handleNumberCallerLogout = async (socket, message) => {
   );
   await redis.del(token);
   await redis.del(singleUseFacilityId);
+  await redis.del(`${singleUseFacilityId}-connected`);
 };
 
 const handleIdentifyTVNumberDisplay = async (socket, message) => {

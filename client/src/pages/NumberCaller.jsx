@@ -129,7 +129,11 @@ export default function NumberCallerPage() {
 
   const logOut = () => {
     clearInterval(pingInterval.current);
-    socket.current.send({ type: 'logout-numbercaller', singleUseFacilityId });
+    socket.current.send({
+      type: 'logout-numbercaller',
+      token: localStorage.getItem('token'),
+      singleUseFacilityId,
+    });
     socket.current.disconnect();
     localStorage.removeItem('token');
     navigate('/');

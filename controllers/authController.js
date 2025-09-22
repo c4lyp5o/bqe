@@ -26,7 +26,7 @@ const loginUser = async (req, res) => {
   // );
 
   if (!user) {
-    return res.status(401).json({ msg: 'Bad Request' });
+    return res.status(401).json({ msg: 'Unauthorized' });
   }
 
   const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {

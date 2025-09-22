@@ -132,7 +132,7 @@ export default function TvNumberDisplayPage() {
       `Nombor `,
       ...digits,
       facilityRoom.split(' ')[0],
-      facilityRoom.split(' ')[1],
+      facilityRoom.split(' ')[1] ? facilityRoom.split(' ')[1] : '',
     ];
 
     const handleSpeak = () => {

@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { Scanner, useDevices } from '@yudiel/react-qr-scanner';
 
-export default function QrScanner({ singleUseFacilityId }) {
+export default function QrScanner({ singleUseFacilityId, setCameraOn }) {
   const allDevices = useDevices();
 
   const [pause, setPause] = useState(false);
@@ -14,7 +14,11 @@ export default function QrScanner({ singleUseFacilityId }) {
       try {
         const tempId = result[0].rawValue.split('temp-')[1];
         const qrCode = `/api/v1/trigger/${tempId}-${singleUseFacilityId}`;
-        await axios.get(qrCode);
+        await axios.get(qrCode, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
         // console.log('QR code processed successfully');
       } catch (error) {
         toast.error('Invalid QR code');

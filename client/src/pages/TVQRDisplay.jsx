@@ -24,16 +24,23 @@ export default function TvQRDisplayPage() {
     const initializeSocket = async () => {
       const { data } = await axios.get('/api/v1/getnanoid');
       const tempId = data.number;
-      // console.log('tempId: ', data);
 
-      socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
+      const wsUrl =
+        import.meta.env.VITE_PUBLIC_BUILD === 'development'
+          ? 'ws://localhost:5000'
+          : `${
+              window.location.host.includes('localhost') ? 'ws://' : 'wss://'
+            }${window.location.host}`;
+
+      socket.current = io(wsUrl, {
         autoConnect: true,
+        transports: ['websocket'],
       });
 
       socket.current.on('connect', () => {
         // console.log('Connected to WebSocket server as open user');
         socket.current.send({
-          type: 'identifyopenpublic',
+          type: 'identifytvqrdisplay',
           tempId: tempId,
         });
         setLoading(false);
@@ -51,9 +58,7 @@ export default function TvQRDisplayPage() {
           case 'open-queue-screen':
             // console.log('Received open-queue-screen message');
             setLoading(true);
-            navigate(
-              `/tv/${message.tempId}/${message.uuid}/${message.singleUseFacilityId}`
-            );
+            navigate(`/tv/${message.tempId}/${message.singleUseFacilityId}`);
             break;
         }
       });

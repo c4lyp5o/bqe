@@ -29,8 +29,16 @@ export default function FrontFacing() {
   const refreshInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
+    const wsUrl =
+      import.meta.env.VITE_PUBLIC_BUILD === 'development'
+        ? 'ws://localhost:5000'
+        : `${window.location.host.includes('localhost') ? 'ws://' : 'wss://'}${
+            window.location.host
+          }`;
+
+    socket.current = io(wsUrl, {
       autoConnect: true,
+      transports: ['websocket'],
     });
 
     socket.current.on('connect', () => {

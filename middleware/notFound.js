@@ -1,5 +1,5 @@
-const notFound = (req, res, next) => {
-  res.status(404).json({ message: 'Resource not found' });
+const notFound = (req, res) => {
+  res.status(404).json({ message: 'Not found' });
 };
 
 export default notFound;

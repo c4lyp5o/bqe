@@ -37,13 +37,25 @@ export default function NumberCallerPage() {
   const pingInterval = useRef(null);
 
   useEffect(() => {
-    socket.current = io(import.meta.env.VITE_PUBLIC_WS_DOMAIN, {
+    const wsUrl =
+      import.meta.env.VITE_PUBLIC_BUILD === 'development'
+        ? 'ws://localhost:5000'
+        : `${window.location.host.includes('localhost') ? 'ws://' : 'wss://'}${
+            window.location.host
+          }`;
+
+    socket.current = io(wsUrl, {
       autoConnect: true,
+      transports: ['websocket'],
     });
 
     socket.current.on('connect', () => {
       setAliveConn(true);
-      socket.current.send({ type: 'identifyadmin', singleUseFacilityId });
+      socket.current.send({
+        type: 'identifynumbercaller',
+        token: localStorage.getItem('token'),
+        singleUseFacilityId,
+      });
       startPing();
     });
 
@@ -65,7 +77,7 @@ export default function NumberCallerPage() {
           setUuid(message.uuid);
           setLoading(false);
           break;
-        case 'pong-admin':
+        case 'pong-numbercaller':
           setPongs((pongs) => pongs + 1);
           break;
         default:
@@ -99,7 +111,8 @@ export default function NumberCallerPage() {
     setAllNumber(currAllNumber);
     setNumber('');
     socket.current.send({
-      type: 'admin',
+      type: 'numbercaller',
+      token: localStorage.getItem('token'),
       singleUseFacilityId,
       facilityId,
       number: parseInt(number),
@@ -110,14 +123,19 @@ export default function NumberCallerPage() {
   const startPing = () => {
     clearInterval(pingInterval.current);
     pingInterval.current = setInterval(() => {
-      socket.current.send({ type: 'ping-admin', singleUseFacilityId });
+      socket.current.send({ type: 'ping-numbercaller', singleUseFacilityId });
     }, 30000);
   };
 
   const logOut = () => {
     clearInterval(pingInterval.current);
-    socket.current.send({ type: 'logout-admin', singleUseFacilityId });
+    socket.current.send({
+      type: 'logout-numbercaller',
+      token: localStorage.getItem('token'),
+      singleUseFacilityId,
+    });
     socket.current.disconnect();
+    localStorage.removeItem('token');
     navigate('/');
   };
 
@@ -175,7 +193,12 @@ export default function NumberCallerPage() {
           {cameraOn ? 'Close Camera' : 'Open Camera'}
         </button>
         <div className='mt-3'>
-          {cameraOn && <QrScanner singleUseFacilityId={singleUseFacilityId} />}
+          {cameraOn && (
+            <QrScanner
+              singleUseFacilityId={singleUseFacilityId}
+              setCameraOn={setCameraOn}
+            />
+          )}
         </div>
       </div>
     </div>

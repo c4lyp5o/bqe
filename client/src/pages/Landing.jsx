@@ -20,25 +20,42 @@ const mockRoomArray = [
 export default function Landing() {
   const navigate = useNavigate();
 
+  const [password, setPassword] = useState('');
   const [facilityId, setFacilityId] = useState('');
   const [facilityRoom, setFacilityRoom] = useState('');
 
   const goToNumberCaller = async (e) => {
     e.preventDefault();
 
+    try {
+      const { data } = await axios.post('/api/v1/login', {
+        password,
+      });
+      localStorage.setItem('token', data.token);
+    } catch (error) {
+      return toast.error('Login failed. Please try again.');
+    }
+
     const facility = mockArray.find((fac) => fac.facilityId === facilityId);
 
     try {
-      const { data } = await axios.post('/api/v1/getsingle', {
-        facilityId: facility.facilityId,
-        facilityName: facility.facilityName,
-        facilityRoom: facilityRoom,
-      });
+      const { data } = await axios.post(
+        '/api/v1/getsingle',
+        {
+          facilityId: facility.facilityId,
+          facilityName: facility.facilityName,
+          facilityRoom: facilityRoom,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
 
       navigate(`/numbercaller/${data.singleUseFacilityId}`);
     } catch (error) {
-      // console.error(error);
-      toast.error('We have encountered an error. Please try again.');
+      return toast.error('We have encountered an error. Please try again.');
     }
   };
 
@@ -84,6 +101,17 @@ export default function Landing() {
                 </option>
               ))}
             </select>
+          )}
+          {facilityId && facilityRoom && (
+            <input
+              type='password'
+              id='password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder='Enter Password'
+              required
+              className='w-full p-3 mb-4 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            />
           )}
           <button
             type='submit'

@@ -48,14 +48,20 @@ export default function CustomerPage() {
 	return (
 		<div className="min-h-screen bg-zinc-950 text-zinc-100 p-6 flex flex-col items-center justify-center">
 			{/* Facility name */}
-			<h2 className="text-zinc-500 text-sm uppercase tracking-widest">{info.facility?.name}</h2>
+			<h2 className="text-zinc-500 text-sm uppercase tracking-widest">
+				{info.facility?.name}
+			</h2>
 			{info.facility?.displayText && (
-				<p className="text-zinc-600 text-sm mt-1">{info.facility?.displayText}</p>
+				<p className="text-zinc-600 text-sm mt-1">
+					{info.facility?.displayText}
+				</p>
 			)}
 
 			{/* Your ticket number — HUGE */}
 			<div className="my-10 text-center">
-				<p className="text-zinc-500 text-base uppercase tracking-wide mb-2">Your Number</p>
+				<p className="text-zinc-500 text-base uppercase tracking-wide mb-2">
+					Your Number
+				</p>
 				<p className="text-8xl font-bold text-emerald-400">{info.label}</p>
 				<p className="text-zinc-500 text-sm mt-4">
 					{info.waitingAhead > 0
@@ -66,7 +72,9 @@ export default function CustomerPage() {
 
 			{/* Last 3 called */}
 			<div className="text-center">
-				<h3 className="text-zinc-500 text-sm uppercase tracking-wide mb-4">Recently Called</h3>
+				<h3 className="text-zinc-500 text-sm uppercase tracking-wide mb-4">
+					Recently Called
+				</h3>
 				<div className="flex gap-4 justify-center">
 					{info.lastCalled.length === 0 && <p className="text-zinc-700">—</p>}
 					{info.lastCalled.map((t) => (

@@ -18,7 +18,9 @@ export function createFacility(name, displayText = "") {
 		const tvCode = genCode(5);
 		try {
 			const info = db
-				.query("INSERT INTO facilities (admin_code, tv_code, name, display_text, created_at) VALUES (?,?,?,?,?)")
+				.query(
+					"INSERT INTO facilities (admin_code, tv_code, name, display_text, created_at) VALUES (?,?,?,?,?)",
+				)
 				.run(adminCode, tvCode, name, displayText, Date.now());
 			return { id: info.lastInsertRowid, adminCode, tvCode, name, displayText };
 		} catch (e) {
@@ -45,8 +47,13 @@ export function getFacilityById(id) {
 
 export function updateFacility(id, { name, displayText }) {
 	const db = getDb();
-	if (name !== undefined) db.query("UPDATE facilities SET name = ? WHERE id = ?").run(name, id);
-	if (displayText !== undefined) db.query("UPDATE facilities SET display_text = ? WHERE id = ?").run(displayText, id);
+	if (name !== undefined)
+		db.query("UPDATE facilities SET name = ? WHERE id = ?").run(name, id);
+	if (displayText !== undefined)
+		db.query("UPDATE facilities SET display_text = ? WHERE id = ?").run(
+			displayText,
+			id,
+		);
 	return getFacilityById(id);
 }
 
@@ -54,7 +61,9 @@ export function updateFacility(id, { name, displayText }) {
 
 export function getNextTicketNumber(facilityId) {
 	const row = getDb()
-		.query("SELECT COALESCE(MAX(number), 0) + 1 AS next FROM tickets WHERE facility_id = ?")
+		.query(
+			"SELECT COALESCE(MAX(number), 0) + 1 AS next FROM tickets WHERE facility_id = ?",
+		)
 		.get(facilityId);
 	return row.next;
 }
@@ -73,7 +82,9 @@ export function issueTicket(facilityId, phoneHash = null) {
 	const letter = getFacilityLetter(facilityId);
 	const label = `${letter}${String(number).padStart(3, "0")}`;
 	const info = db
-		.query("INSERT INTO tickets (facility_id, number, label, phone_hash, status, created_at) VALUES (?,?,?,?,'waiting',?)")
+		.query(
+			"INSERT INTO tickets (facility_id, number, label, phone_hash, status, created_at) VALUES (?,?,?,?,'waiting',?)",
+		)
 		.run(facilityId, number, label, phoneHash, Date.now());
 	return { id: info.lastInsertRowid, number, label, phoneHash };
 }
@@ -81,10 +92,14 @@ export function issueTicket(facilityId, phoneHash = null) {
 export function callTicket(facilityId, ticketId) {
 	const db = getDb();
 	// cancel any currently serving
-	db.query("UPDATE tickets SET status = 'no_show' WHERE facility_id = ? AND status = 'called'").run(facilityId);
+	db.query(
+		"UPDATE tickets SET status = 'no_show' WHERE facility_id = ? AND status = 'called'",
+	).run(facilityId);
 	// call this one
 	const info = db
-		.query("UPDATE tickets SET status = 'called', called_at = ? WHERE id = ? AND facility_id = ? AND status = 'waiting'")
+		.query(
+			"UPDATE tickets SET status = 'called', called_at = ? WHERE id = ? AND facility_id = ? AND status = 'waiting'",
+		)
 		.run(Date.now(), ticketId, facilityId);
 	return info.changes > 0;
 }
@@ -93,7 +108,9 @@ export function recallTicket(facilityId, ticketId) {
 	const db = getDb();
 	// same as call but for already-called tickets
 	const info = db
-		.query("UPDATE tickets SET called_at = ? WHERE id = ? AND facility_id = ? AND status IN ('called','no_show')")
+		.query(
+			"UPDATE tickets SET called_at = ? WHERE id = ? AND facility_id = ? AND status IN ('called','no_show')",
+		)
 		.run(Date.now(), ticketId, facilityId);
 	return info.changes > 0;
 }
@@ -101,7 +118,9 @@ export function recallTicket(facilityId, ticketId) {
 export function markArrived(facilityId, ticketId) {
 	const db = getDb();
 	const info = db
-		.query("UPDATE tickets SET status = 'arrived', arrived_at = ? WHERE id = ? AND facility_id = ? AND status IN ('called','no_show')")
+		.query(
+			"UPDATE tickets SET status = 'arrived', arrived_at = ? WHERE id = ? AND facility_id = ? AND status IN ('called','no_show')",
+		)
 		.run(Date.now(), ticketId, facilityId);
 	return info.changes > 0;
 }
@@ -114,15 +133,24 @@ export function facilitySnapshot(facilityId) {
 	if (!fac) return null;
 
 	const tickets = db
-		.query("SELECT id, number, label, status, called_at, arrived_at, created_at FROM tickets WHERE facility_id = ? ORDER BY number ASC")
+		.query(
+			"SELECT id, number, label, status, called_at, arrived_at, created_at FROM tickets WHERE facility_id = ? ORDER BY number ASC",
+		)
 		.all(facilityId);
 
 	const waiting = tickets.filter((t) => t.status === "waiting");
-	const called = tickets.filter((t) => t.status === "called" || t.status === "no_show");
+	const called = tickets.filter(
+		(t) => t.status === "called" || t.status === "no_show",
+	);
 	const arrived = tickets.filter((t) => t.status === "arrived");
 	const nowServing = called.find((t) => t.status === "called");
 	const lastCalled = tickets
-		.filter((t) => t.status === "called" || t.status === "arrived" || t.status === "no_show")
+		.filter(
+			(t) =>
+				t.status === "called" ||
+				t.status === "arrived" ||
+				t.status === "no_show",
+		)
 		.sort((a, b) => (b.called_at || 0) - (a.called_at || 0))
 		.slice(0, 3);
 
@@ -132,7 +160,9 @@ export function facilitySnapshot(facilityId) {
 		displayText: fac.display_text,
 		adminCode: fac.admin_code,
 		tvCode: fac.tv_code,
-		nowServing: nowServing ? { id: nowServing.id, label: nowServing.label } : null,
+		nowServing: nowServing
+			? { id: nowServing.id, label: nowServing.label }
+			: null,
 		lastCalled: lastCalled.map((t) => ({ label: t.label, status: t.status })),
 		waitingCount: waiting.length,
 		servedCount: arrived.length,
@@ -152,15 +182,20 @@ export function ticketInfo(ticketId) {
 	if (!ticket) return null;
 	const fac = getFacilityById(ticket.facility_id);
 	const recent = db
-		.query("SELECT label, status FROM tickets WHERE facility_id = ? AND status IN ('called','arrived','no_show') AND called_at IS NOT NULL ORDER BY called_at DESC LIMIT 3")
+		.query(
+			"SELECT label, status FROM tickets WHERE facility_id = ? AND status IN ('called','arrived','no_show') AND called_at IS NOT NULL ORDER BY called_at DESC LIMIT 3",
+		)
 		.all(ticket.facility_id);
 	return {
 		label: ticket.label,
 		number: ticket.number,
 		status: ticket.status,
-		waitingAhead: db
-			.query("SELECT COUNT(*) AS cnt FROM tickets WHERE facility_id = ? AND status = 'waiting' AND number < ?")
-			.get(ticket.facility_id, ticket.number)?.cnt || 0,
+		waitingAhead:
+			db
+				.query(
+					"SELECT COUNT(*) AS cnt FROM tickets WHERE facility_id = ? AND status = 'waiting' AND number < ?",
+				)
+				.get(ticket.facility_id, ticket.number)?.cnt || 0,
 		facility: { name: fac.name, displayText: fac.display_text },
 		lastCalled: recent.map((r) => ({ label: r.label, status: r.status })),
 	};
@@ -174,13 +209,17 @@ export function generateQrNonce(facilityId) {
 	db.query("DELETE FROM qr_nonces WHERE expires_at < ?").run(Date.now());
 	const nonce = genCode(8);
 	const expiresAt = Date.now() + 30000; // 30 seconds
-	db.query("INSERT INTO qr_nonces (facility_id, nonce, expires_at) VALUES (?,?,?)").run(facilityId, nonce, expiresAt);
+	db.query(
+		"INSERT INTO qr_nonces (facility_id, nonce, expires_at) VALUES (?,?,?)",
+	).run(facilityId, nonce, expiresAt);
 	return { nonce, expiresAt };
 }
 
 export function consumeQrNonce(nonce) {
 	const db = getDb();
-	const row = db.query("SELECT * FROM qr_nonces WHERE nonce = ? AND expires_at > ?").get(nonce, Date.now());
+	const row = db
+		.query("SELECT * FROM qr_nonces WHERE nonce = ? AND expires_at > ?")
+		.get(nonce, Date.now());
 	if (!row) return null;
 	db.query("DELETE FROM qr_nonces WHERE id = ?").run(row.id);
 	return { facilityId: row.facility_id };

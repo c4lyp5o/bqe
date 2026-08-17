@@ -35,10 +35,10 @@ export default function Frontpage() {
 		setError("");
 		try {
 			const fac = await api.getFacility(code.trim().toUpperCase());
-			// route based on which code matched
 			const isAdmin = code.trim().toUpperCase() === fac.adminCode;
 			nav(isAdmin ? `/admin/${fac.adminCode}` : `/tv/${fac.tvCode}`);
 		} catch (err) {
+			console.error(err);
 			setError("Facility not found. Check your code.");
 		} finally {
 			setLoading(false);
@@ -49,9 +49,14 @@ export default function Frontpage() {
 		<div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-6">
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl w-full">
 				{/* Left: Create */}
-				<form onSubmit={handleCreate} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-6">
+				<form
+					onSubmit={handleCreate}
+					className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-6"
+				>
 					<h2 className="text-2xl font-bold text-emerald-400">Start a Queue</h2>
-					<p className="text-zinc-400 text-sm">Create a new facility and get your admin + TV codes.</p>
+					<p className="text-zinc-400 text-sm">
+						Create a new facility and get your admin + TV codes.
+					</p>
 					<input
 						type="text"
 						placeholder="Facility name"
@@ -70,9 +75,14 @@ export default function Frontpage() {
 				</form>
 
 				{/* Right: Login */}
-				<form onSubmit={handleLogin} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-6">
+				<form
+					onSubmit={handleLogin}
+					className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-6"
+				>
 					<h2 className="text-2xl font-bold text-purple-400">Join a Queue</h2>
-					<p className="text-zinc-400 text-sm">Enter your admin or TV code to access the dashboard or display.</p>
+					<p className="text-zinc-400 text-sm">
+						Enter your admin or TV code to access the dashboard or display.
+					</p>
 					<input
 						type="text"
 						placeholder="Enter 5-character code"

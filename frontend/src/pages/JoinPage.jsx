@@ -19,7 +19,10 @@ export default function JoinPage() {
 		setLoading(true);
 		setError("");
 		try {
-			const data = await api.join(code, { phone: phone.trim() || undefined, nonce });
+			const data = await api.join(code, {
+				phone: phone.trim() || undefined,
+				nonce,
+			});
 			nav(`/ticket/${data.ticket.id}`);
 		} catch (err) {
 			setError(err.message);
@@ -39,7 +42,9 @@ export default function JoinPage() {
 	return (
 		<div className="min-h-screen bg-zinc-950 text-zinc-100 p-6 flex flex-col items-center justify-center">
 			<h2 className="text-2xl font-bold text-white mb-2">Join the Queue</h2>
-			<p className="text-zinc-500 text-sm mb-8">Enter your phone number to receive your ticket</p>
+			<p className="text-zinc-500 text-sm mb-8">
+				Enter your phone number to receive your ticket
+			</p>
 			<form onSubmit={handleJoin} className="w-full max-w-sm space-y-4">
 				<input
 					type="tel"
@@ -60,9 +65,7 @@ export default function JoinPage() {
 					Phone is optional. Your number is hashed and never shared.
 				</p>
 			</form>
-			{error && (
-				<p className="mt-4 text-red-400 text-sm">{error}</p>
-			)}
+			{error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
 		</div>
 	);
 }

@@ -8,12 +8,14 @@ async function req(path, opts = {}) {
 		body: opts.body ? JSON.stringify(opts.body) : undefined,
 	});
 	const data = await res.json().catch(() => ({}));
+	// Backend returns 200 with { ok: false } for domain errors — surface them
+	if (data && data.ok === false) throw new Error(data.message || "Request failed");
 	if (!res.ok) throw new Error(data.message || "Request failed");
 	return data;
 }
 
 export const api = {
-	health: () => req("/health"),
+	health: () => req(""),
 	createFacility: (name) =>
 		req("/facility", { method: "POST", body: { name } }),
 	getFacility: (code) => req(`/facility/${code}`),

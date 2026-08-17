@@ -2,8 +2,9 @@
 // Facility name + display text, current queue (MASSIVE), last 3 called,
 // rotating QR code that customers scan to join.
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { CheckCircle2, QrCode, Ticket, Users } from "lucide-react";
 import { api } from "../lib/api";
 import { useSocket } from "../lib/socket";
 import { QRCodeSVG } from "qrcode.react";
@@ -14,14 +15,12 @@ export default function TVDisplay() {
 	const { code } = useParams();
 	const { state } = useSocket(code);
 	const [qrUrl, setQrUrl] = useState("");
-	const [expiresAt, setExpiresAt] = useState(null);
 	const [updating, setUpdating] = useState(false);
 
 	const fetchQr = async (nonce) => {
 		setUpdating(true);
 		try {
 			const url = `${import.meta.env.VITE_APP_URL || "http://localhost:5173"}/join?code=${code}&nonce=${nonce}`;
-			console.log("QR URL:", url);
 			setQrUrl(url);
 		} finally {
 			setUpdating(false);
@@ -33,7 +32,6 @@ export default function TVDisplay() {
 		if (!code) return;
 		const getNonce = async () => {
 			const res = await api.qrNonce(code);
-			setExpiresAt(res.expiresAt);
 			await fetchQr(res.nonce);
 		};
 		getNonce();
@@ -43,8 +41,10 @@ export default function TVDisplay() {
 
 	if (!state) {
 		return (
-			<div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-				<p className="text-zinc-500 animate-pulse">Loading TV display...</p>
+			<div className="min-h-screen flex items-center justify-center">
+				<p className="text-ink-muted animate-pulse text-lg">
+					Loading TV display…
+				</p>
 			</div>
 		);
 	}
@@ -53,75 +53,103 @@ export default function TVDisplay() {
 	const serving = state.tickets.find((t) => t.status === "called");
 
 	return (
-		<div className="min-h-screen bg-zinc-950 text-zinc-100 p-10 flex flex-col">
+		<div className="min-h-screen flex flex-col px-8 py-8 md:px-12 md:py-10">
 			{/* Top bar — facility name + display text */}
-			<div className="flex items-start justify-between">
-				<div>
-					<h1 className="text-4xl font-bold text-white">{state.name}</h1>
-					{state.displayText && (
-						<p className="text-zinc-400 text-xl mt-2">{state.displayText}</p>
-					)}
+			<header className="flex items-start justify-between gap-6">
+				<div className="flex items-center gap-4">
+					<div className="size-11 rounded-xl bg-accent-tint border border-accent/25 flex items-center justify-center shrink-0">
+						<Ticket className="size-6 text-accent-bright" />
+					</div>
+					<div>
+						<h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+							{state.name}
+						</h1>
+						{state.displayText && (
+							<p className="text-ink-muted text-lg mt-1">
+								{state.displayText}
+							</p>
+						)}
+					</div>
 				</div>
-				<p className="text-zinc-500 font-mono text-sm">Code: {code}</p>
-			</div>
+				<span className="chip bg-raised border border-hair text-ink-faint font-mono tracking-[0.2em]">
+					{code}
+				</span>
+			</header>
 
-			{/* Main: current queue + QR */}
-			<div className="flex-1 flex items-center justify-center gap-16">
+			{/* Main — now serving + QR */}
+			<main className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_auto] items-center gap-12 py-10">
 				{/* Now serving — MASSIVE */}
-				<div className="text-center flex-1">
-					<h2 className="text-3xl text-zinc-400 uppercase tracking-widest mb-4">
+				<div className="text-center lg:text-left">
+					<p className="text-sm uppercase tracking-[0.3em] text-ink-muted mb-4">
 						Now Serving
-					</h2>
-					<p className="text-[16rem] font-bold leading-none text-emerald-400">
-						{serving ? serving.label : "—"}
 					</p>
-					<p className="text-zinc-500 text-lg mt-6">
-						Waiting: {state.waitingCount}
+					<p
+						key={serving?.label || "none"}
+						style={{ animation: serving ? "rise 0.3s ease-out" : undefined }}
+						className="text-[7rem] md:text-[11rem] xl:text-[15rem] font-extrabold leading-none tracking-tight font-mono text-accent-bright"
+					>
+						{serving ? serving.label : <span className="text-ink-faint">—</span>}
 					</p>
+					<div className="mt-8 flex gap-4 text-sm justify-center lg:justify-start">
+						<span className="chip bg-raised border border-hair text-ink-2 px-3 py-1.5">
+							<Users className="size-4 text-ink-muted" />
+							{state.waitingCount} waiting
+						</span>
+						<span className="chip bg-raised border border-hair text-ink-2 px-3 py-1.5">
+							<CheckCircle2 className="size-4 text-accent" />
+							{state.servedCount} served
+						</span>
+					</div>
 				</div>
 
-				{/* QR + last 3 called */}
+				{/* QR */}
 				<div className="text-center">
-					<div className="bg-white rounded-2xl p-6 inline-block">
-						{qrUrl && (
+					<div className="relative inline-block bg-white rounded-2xl p-5">
+						{qrUrl ? (
 							<QRCodeSVG
 								value={qrUrl}
-								size={260}
+								size={220}
 								level="H"
-								fgColor="#000"
-								bgColor="#fff"
+								fgColor="#0a0f0d"
+								bgColor="#ffffff"
 							/>
+						) : (
+							<div className="size-[220px] flex items-center justify-center text-zinc-400">
+								<QrCode className="size-10" />
+							</div>
 						)}
 						{updating && (
-							<div className="absolute inset-0 bg-white/50 rounded-2xl animate-pulse" />
+							<div className="absolute inset-0 bg-white/60 rounded-2xl animate-pulse" />
 						)}
 					</div>
-					<p className="text-zinc-500 text-sm mt-4">Scan to join the queue</p>
-					{expiresAt && (
-						<p className="text-zinc-600 text-xs mt-1">Refreshes every 30s</p>
-					)}
-
-					{/* Last 3 called */}
-					<div className="mt-10">
-						<h3 className="text-zinc-500 text-sm uppercase tracking-wide mb-3">
-							Recently Called
-						</h3>
-						<div className="flex gap-3 justify-center">
-							{state.lastCalled.length === 0 && (
-								<p className="text-zinc-700">—</p>
-							)}
-							{state.lastCalled.map((t) => (
-								<div
-									key={t.label}
-									className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 text-2xl font-mono font-semibold"
-								>
-									{t.label}
-								</div>
-							))}
-						</div>
-					</div>
+					<p className="text-sm text-ink-muted mt-4">Scan to join the queue</p>
+					<p className="text-xs text-ink-faint font-mono mt-1">
+						nonce refreshes · 30s
+					</p>
 				</div>
-			</div>
+			</main>
+
+			{/* Recently called */}
+			<footer className="flex items-center justify-center gap-4 pt-6 border-t border-hair">
+				<span className="text-xs uppercase tracking-[0.25em] text-ink-faint mr-2">
+					Recently called
+				</span>
+				{state.lastCalled.length === 0 && (
+					<span className="text-ink-faint text-lg">—</span>
+				)}
+				{state.lastCalled.map((t) => (
+					<div
+						key={t.label}
+						className={`rounded-xl px-5 py-2.5 text-2xl font-mono font-semibold border ${
+							t.status === "arrived"
+								? "border-accent/40 bg-accent-tint text-accent-bright"
+								: "border-warn/40 bg-warn-tint text-warn"
+						}`}
+					>
+						{t.label}
+					</div>
+				))}
+			</footer>
 		</div>
 	);
 }

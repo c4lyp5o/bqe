@@ -1,4 +1,4 @@
-# BQE — Bring Queue Everywhere
+# Best QMS Ever (BQE)
 
 A lightweight, account-free queue management app. A facility gets an **admin code** and a **TV code**;
 visitors join by scanning a rotating QR code on the TV display, and staff call, re-call and mark tickets

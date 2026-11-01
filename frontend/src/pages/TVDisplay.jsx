@@ -20,7 +20,7 @@ export default function TVDisplay() {
 	const fetchQr = async (nonce) => {
 		setUpdating(true);
 		try {
-			const url = `${import.meta.env.VITE_APP_URL || "http://localhost:5173"}/join?code=${code}&nonce=${nonce}`;
+			const url = `${import.meta.env.VITE_APP_URL || window.location.origin}/join?code=${code}&nonce=${nonce}`;
 			setQrUrl(url);
 		} finally {
 			setUpdating(false);
@@ -65,9 +65,7 @@ export default function TVDisplay() {
 							{state.name}
 						</h1>
 						{state.displayText && (
-							<p className="text-ink-muted text-lg mt-1">
-								{state.displayText}
-							</p>
+							<p className="text-ink-muted text-lg mt-1">{state.displayText}</p>
 						)}
 					</div>
 				</div>
@@ -88,7 +86,11 @@ export default function TVDisplay() {
 						style={{ animation: serving ? "rise 0.3s ease-out" : undefined }}
 						className="text-[7rem] md:text-[11rem] xl:text-[15rem] font-extrabold leading-none tracking-tight font-mono text-accent-bright"
 					>
-						{serving ? serving.label : <span className="text-ink-faint">—</span>}
+						{serving ? (
+							serving.label
+						) : (
+							<span className="text-ink-faint">—</span>
+						)}
 					</p>
 					<div className="mt-8 flex gap-4 text-sm justify-center lg:justify-start">
 						<span className="chip bg-raised border border-hair text-ink-2 px-3 py-1.5">

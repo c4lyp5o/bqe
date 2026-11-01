@@ -11,9 +11,9 @@ dist/
 backend/data/
 
 # Local config & secrets — never baked into the image
-.env
-.env.*
-!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 
 # Logs
 logs/

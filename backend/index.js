@@ -3,6 +3,8 @@
 
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
+import { existsSync } from "node:fs";
+import { join, normalize } from "node:path";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 
@@ -40,10 +42,24 @@ httpServer.listen(config.WS_PORT, config.HOST, () => {
 });
 
 // ─── REST (Elysia) ───────────────────────────────────────────────
+const hasClient = existsSync(join(config.CLIENT_DIR, "index.html"));
+
 const app = new Elysia()
 	.use(cors({ origin: config.CLIENT_ORIGIN, credentials: true }))
 	.use(HealthRoute)
 	.use(FacilityRoute)
+	.get("/*", async ({ request, set }) => {
+		// Built frontend: serve real files, fall back to index.html for client routes
+		const { pathname } = new URL(request.url);
+		if (!hasClient || pathname.startsWith("/api/")) {
+			set.status = 404;
+			return { ok: false, message: "Not found" };
+		}
+		const rel = normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, "");
+		const file = Bun.file(join(config.CLIENT_DIR, rel));
+		if (!rel.includes("..") && (await file.exists()) && !rel.endsWith("/")) return file;
+		return Bun.file(join(config.CLIENT_DIR, "index.html"));
+	})
 	.onError(({ code, error, set }) => {
 		if (code === "VALIDATION") {
 			set.status = 400;

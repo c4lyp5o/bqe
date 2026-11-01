@@ -60,7 +60,7 @@ export default function Frontpage() {
 				<div className="size-9 rounded-[10px] bg-accent-tint border border-accent/30 flex items-center justify-center">
 					<Ticket className="size-4.5 text-accent-bright" strokeWidth={2.5} />
 				</div>
-				<span className="font-mono font-bold text-lg tracking-tight">bqe</span>
+				<span className="font-mono font-bold text-lg tracking-tight">Best QMS Ever</span>
 				<span className="text-ink-faint text-sm mt-0.5">/ queue management</span>
 			</div>
 
